@@ -108,6 +108,18 @@ export class AdminService {
   }
 
   async getPublishedTours(filters: TourFilters = {}): Promise<Tour[]> {
+    // If filtering by country, first get the city IDs for that country
+    let cityIds: number[] | undefined;
+    if (filters.country) {
+      const { data: cities, error: citiesError } = await supabase
+        .from('cities')
+        .select('id')
+        .eq('country_id', filters.country);
+
+      if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
+      cityIds = cities?.map(c => c.id) || [];
+    }
+
     let query = supabase
       .from('tours')
       .select(`
@@ -116,8 +128,12 @@ export class AdminService {
       `)
       .eq('is_published', true);
 
-    if (filters.country) {
-      query = query.eq('city.countries.id', filters.country);
+    // If we have city IDs from country filter, use them
+    if (cityIds && cityIds.length > 0) {
+      query = query.in('city_id', cityIds);
+    } else if (filters.country) {
+      // Country filter was specified but no cities found
+      return [];
     }
 
     if (filters.city) {
