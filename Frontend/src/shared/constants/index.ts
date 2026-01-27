@@ -7,7 +7,7 @@ export const COUNTRIES: Record<Country, { name: string; code: string; flag: stri
   rwanda: { name: 'Rwanda', code: 'RW', flag: '🇷🇼' },
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000');
 
 export const API_ENDPOINTS = {
   COUNTRIES: '/api/countries',
