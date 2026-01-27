@@ -25,8 +25,8 @@ Your Backend is ready to deploy. The key files are:
    - **Environment**: `Node`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
-   - **Build Command**: `cd Backend && npm install && npm run build`
-   - **Start Command**: `cd Backend && npm start`
+   - **Build Command**: `npm install -ws && npm run build --workspace=Backend`
+   - **Start Command**: `npm start --workspace=Backend`
    - **Plan**: Free or paid (Free tier available)
 
 ### Step 3: Set Environment Variables
