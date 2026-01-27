@@ -13,6 +13,8 @@
     "dev": "npm run dev --workspace=Admin",
     "dev:all": "concurrently \"npm run dev --workspace=Admin\" \"npm run dev --workspace=Backend\" \"npm run dev --workspace=Frontend\"",
     "build": "npm run build -ws",
+    "build:deploy": "npm run build --workspace=Admin && npm run build --workspace=Frontend && npm run copy:admin",
+    "copy:admin": "mkdir -p Frontend/dist/admin && cp -r Admin/dist/* Frontend/dist/admin/",
     "lint": "npm run lint -ws",
     "typecheck": "npm run typecheck -ws",
     "install:all": "npm install -ws",

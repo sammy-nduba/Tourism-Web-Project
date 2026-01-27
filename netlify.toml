@@ -1,0 +1,22 @@
+[build]
+  command = "npm run build:deploy"
+  publish = "Frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Rewrite /admin to Admin app (SPA routing)
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
+
+# Rewrite all routes to Frontend app (SPA routing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Function configuration
+[functions]
+  directory = "functions"
