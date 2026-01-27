@@ -54,7 +54,9 @@ RATE_LIMIT_MAX_REQUESTS=100
 1. Click **Create Web Service**
 2. Render will automatically build and deploy your service
 3. You'll see a deployment log - wait for it to complete
-4. Once deployed, you'll get a URL like: `https://wild-horizon-backend.onrender.com`
+4. Once deployed, you'll get a URL like: `https://tourism-web-project.onrender.com` ✓
+
+**Your Backend is now live at:** `https://tourism-web-project.onrender.com`
 
 ### Step 5: Update Netlify Configuration
 
@@ -63,8 +65,10 @@ Once you have your Render Backend URL, update the Frontend:
 1. Go to [Netlify Dashboard](https://app.netlify.com)
 2. Select your Wild Horizon project
 3. Go to **Site settings** → **Build & deploy** → **Environment**
-4. Set `VITE_BACKEND_URL` to your Render URL: `https://wild-horizon-backend.onrender.com`
+4. Set `VITE_BACKEND_URL` to your Render URL: `https://tourism-web-project.onrender.com`
 5. Trigger a redeploy
+
+**Already updated!** ✓ Netlify is now configured with `VITE_BACKEND_URL=https://tourism-web-project.onrender.com`
 
 ### Step 6: Test the Integration
 
