@@ -36,7 +36,8 @@ interface TourFormData {
   title: string;
   slug: string;
   description: string;
-  city_id: string;
+  country_name: string;
+  city_name: string;
   duration_days: number;
   price: number;
   difficulty_level: string;
@@ -61,7 +62,8 @@ export function ToursPage() {
     title: '',
     slug: '',
     description: '',
-    city_id: '',
+    country_name: '',
+    city_name: '',
     duration_days: 1,
     price: 0,
     difficulty_level: 'Budget',
@@ -200,11 +202,25 @@ export function ToursPage() {
         imageUrl = await handleImageUpload(formData.image_file);
       }
 
+      // Look up city by name and country
+      let city_id: string | null = null;
+      if (formData.city_name.trim() && formData.country_name.trim()) {
+        try {
+          const matchedCity = cities.find(
+            (c: any) => c.name.toLowerCase() === formData.city_name.toLowerCase() &&
+                       c.countries?.name?.toLowerCase() === formData.country_name.toLowerCase()
+          );
+          city_id = matchedCity?.id || null;
+        } catch (error) {
+          console.error('Error matching city:', error);
+        }
+      }
+
       const tourData: TourInsert = {
         title: formData.title.trim(),
         slug: formData.slug.trim(),
         description: formData.description.trim(),
-        city_id: formData.city_id || null,
+        city_id,
         duration_days: formData.duration_days,
         price: formData.price,
         difficulty_level: formData.difficulty_level,
@@ -223,7 +239,8 @@ export function ToursPage() {
         title: '',
         slug: '',
         description: '',
-        city_id: '',
+        country_name: '',
+        city_name: '',
         duration_days: 1,
         price: 0,
         difficulty_level: 'Budget',
@@ -250,7 +267,8 @@ export function ToursPage() {
       title: '',
       slug: '',
       description: '',
-      city_id: '',
+      country_name: '',
+      city_name: '',
       duration_days: 1,
       price: 0,
       difficulty_level: 'Budget',
@@ -453,21 +471,30 @@ export function ToursPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Destination (City) *
+                    Country *
                   </label>
-                  <select
-                    value={formData.city_id}
-                    onChange={(e) => handleInputChange('city_id', e.target.value)}
+                  <input
+                    type="text"
+                    value={formData.country_name}
+                    onChange={(e) => handleInputChange('country_name', e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="e.g., Kenya, Tanzania, Uganda"
                     required
-                  >
-                    <option value="">Select a destination...</option>
-                    {cities.map((city: any) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city_name}
+                    onChange={(e) => handleInputChange('city_name', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="e.g., Nairobi, Dar es Salaam"
+                    required
+                  />
                 </div>
 
                 <div>

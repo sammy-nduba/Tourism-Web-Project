@@ -45,31 +45,37 @@ export function CountryToursPage() {
         const backendTours = await response.json();
 
         // Transform backend tours to frontend format
-        const transformedTours: TourSummary[] = backendTours.map((tour: any) => ({
-          id: tour.id,
-          title: tour.title,
-          slug: tour.slug,
-          summary: tour.description?.substring(0, 150) + '...' || '',
-          category: 'wildlife', // Default category
-          duration: tour.duration_days,
-          price: {
-            amount: tour.price,
-            currency: 'USD',
-            includes: tour.included || [],
-            excludes: tour.excluded || [],
-          },
-          heroImage: {
-            id: `${tour.id}-hero`,
-            url: tour.image_url,
-            alt: tour.title,
-          },
-          country: tour.cities?.countries?.name?.toLowerCase() || countrySlug,
-          city: tour.cities?.name || 'Various',
-          rating: 4.5,
-          reviewCount: 0,
-          featured: tour.is_published,
-          difficultyLevel: tour.difficulty_level,
-        }));
+        const transformedTours: TourSummary[] = backendTours.map((tour: any) => {
+          // Get country name from nested cities->countries data
+          const countryName = tour.cities?.countries?.name || currentCountry?.name || 'Unknown';
+          const countryNameLower = countryName.toLowerCase() as any;
+          
+          return {
+            id: tour.id,
+            title: tour.title,
+            slug: tour.slug,
+            summary: tour.description?.substring(0, 150) + '...' || '',
+            category: 'wildlife', // Default category
+            duration: tour.duration_days,
+            price: {
+              amount: tour.price,
+              currency: 'USD',
+              includes: tour.included || [],
+              excludes: tour.excluded || [],
+            },
+            heroImage: {
+              id: `${tour.id}-hero`,
+              url: tour.image_url,
+              alt: tour.title,
+            },
+            country: countryNameLower,
+            city: tour.cities?.name || 'Various',
+            rating: 4.5,
+            reviewCount: 0,
+            featured: tour.is_published,
+            difficultyLevel: tour.difficulty_level,
+          };
+        });
 
         setTours(transformedTours);
       } catch (err) {

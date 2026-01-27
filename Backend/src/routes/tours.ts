@@ -3,7 +3,38 @@ import { adminService } from '../services/AdminService.js';
 
 const router = express.Router();
 
-// GET /api/tours - List tours with filtering
+// GET /api/tours/admin/all - Get ALL tours (admin only)
+router.get('/admin/all', async (req, res) => {
+  try {
+    const {
+      country,
+      city,
+      limit,
+      offset,
+      page
+    } = req.query;
+
+    const filters: any = {};
+
+    if (country) filters.country = country as string;
+    if (city) filters.city = city as string;
+    if (limit) filters.limit = parseInt(limit as string);
+    if (offset) filters.offset = parseInt(offset as string);
+    if (page) filters.offset = (parseInt(page as string) - 1) * (filters.limit || 50);
+
+    const tours = await adminService.getTours(filters);
+
+    return res.json(tours);
+  } catch (error) {
+    console.error('Error fetching admin tours:', error);
+    return res.status(500).json({
+      error: 'Failed to fetch tours',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /api/tours - List tours with filtering (published only)
 router.get('/', async (req, res) => {
   try {
     const {

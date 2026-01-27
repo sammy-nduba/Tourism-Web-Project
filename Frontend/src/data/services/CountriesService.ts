@@ -1,5 +1,6 @@
 import { Country } from '../../domain/models';
 import { API_BASE_URL, API_ENDPOINTS } from '../../shared/constants';
+import { getFlagEmoji } from '../../shared/utils/countryUtils';
 
 // Backend country structure based on your database schema
 interface BackendCountry {
@@ -45,7 +46,7 @@ export class CountriesService {
         url: country.image_url,
         alt: country.name,
       },
-      flag: `${country.code} flag`, // Would need proper flag data from backend
+      flag: getFlagEmoji(country.code),
       capital: 'Capital', // Would need to be added to backend
       language: 'English', // Would need to be added to backend
       currency: 'USD', // Would need to be added to backend

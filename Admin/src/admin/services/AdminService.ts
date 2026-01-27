@@ -63,7 +63,7 @@ export class AdminService {
       if (filters?.offset) params.append('offset', filters.offset.toString());
 
       const queryString = params.toString();
-      const url = `${API_CONFIG.BASE_URL}/api/tours${queryString ? `?${queryString}` : ''}`;
+      const url = `${API_CONFIG.BASE_URL}/api/tours/admin/all${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url);
 

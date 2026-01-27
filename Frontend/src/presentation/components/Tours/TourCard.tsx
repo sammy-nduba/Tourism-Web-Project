@@ -11,7 +11,7 @@ interface TourCardProps {
 }
 
 export function TourCard({ tour }: TourCardProps) {
-  const countryInfo = COUNTRIES[tour.country];
+  const countryInfo = COUNTRIES[tour.country] || { name: tour.country, code: '', flag: '🌍' };
 
   return (
     <Card hover>

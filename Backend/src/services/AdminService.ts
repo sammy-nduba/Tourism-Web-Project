@@ -107,7 +107,7 @@ export class AdminService {
     if (error) throw error;
   }
 
-  async getPublishedTours(filters: TourFilters = {}): Promise<Tour[]> {
+  async getTours(filters: TourFilters = {}): Promise<Tour[]> {
     // If filtering by country, first get the city IDs for that country
     let cityIds: number[] | undefined;
     if (filters.country) {
@@ -118,6 +118,99 @@ export class AdminService {
 
       if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
       cityIds = cities?.map(c => c.id) || [];
+    }
+
+    let query = supabase
+      .from('tours')
+      .select(`
+        *,
+        city:cities(*, country:countries(*))
+      `);
+
+    // If we have city IDs from country filter, use them
+    if (cityIds && cityIds.length > 0) {
+      query = query.in('city_id', cityIds);
+    } else if (filters.country) {
+      // Country filter was specified but no cities found
+      return [];
+    }
+
+    if (filters.city) {
+      query = query.eq('city_id', filters.city);
+    }
+
+    if (filters.experience_level) {
+      query = query.eq('difficulty_level', filters.experience_level);
+    }
+
+    if (filters.min_price) {
+      query = query.gte('price', filters.min_price);
+    }
+
+    if (filters.max_price) {
+      query = query.lte('price', filters.max_price);
+    }
+
+    if (filters.query) {
+      query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    if (filters.offset) {
+      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as Tour[];
+  }
+
+  async getPublishedTours(filters: TourFilters = {}): Promise<Tour[]> {
+    // If filtering by country, first get the country ID by code, then get city IDs for that country
+    let cityIds: string[] | undefined;
+    if (filters.country) {
+      // Check if filters.country is a country code (2-3 chars), UUID format, or invalid
+      const isCountryCode = filters.country.length <= 3 && /^[a-z]{2,3}$/i.test(filters.country);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.country);
+      
+      if (isCountryCode) {
+        // Look up country by code
+        const { data: countryData, error: countryError } = await supabase
+          .from('countries')
+          .select('id')
+          .eq('code', filters.country.toUpperCase())
+          .single();
+
+        if (countryError || !countryData) {
+          // Country not found, return empty results
+          return [];
+        }
+
+        const countryId = countryData.id;
+        const { data: cities, error: citiesError } = await supabase
+          .from('cities')
+          .select('id')
+          .eq('country_id', countryId);
+
+        if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
+        cityIds = cities?.map(c => c.id) || [];
+      } else if (isUUID) {
+        // It's a country ID (UUID), fetch cities for it
+        const { data: cities, error: citiesError } = await supabase
+          .from('cities')
+          .select('id')
+          .eq('country_id', filters.country);
+
+        if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
+        cityIds = cities?.map(c => c.id) || [];
+      } else {
+        // Invalid format, return empty results (don't throw error)
+        return [];
+      }
     }
 
     let query = supabase
