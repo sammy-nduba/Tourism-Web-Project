@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_SUPABASE_URL = "https://trhmjqelcznwnvdxdtai.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyaG1qcWVsY3pud252ZHhkdGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNTYzNjYsImV4cCI6MjA3NDgzMjM2Nn0.xdLYLaUg827GfFxIdHwvPd0wquz_U6pZDOuQHrECt6M"
 
 # Rewrite /admin to Admin app (SPA routing)
 [[redirects]]
