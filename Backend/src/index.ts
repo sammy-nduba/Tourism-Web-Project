@@ -11,12 +11,12 @@ import morgan from 'morgan';
 
 // Import routes
 import toursRouter from './routes/tours.js';
-import countriesRouter from './routes/countries';
-import searchRouter from './routes/search';
+import countriesRouter from './routes/countries.js';
+import searchRouter from './routes/search.js';
 
 // Import middleware
-import { errorHandler } from './middleware/errorHandler';
-import { notFoundHandler } from './middleware/notFoundHandler';
+import { errorHandler } from './middleware/errorHandler.js';
+import { notFoundHandler } from './middleware/notFoundHandler.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
