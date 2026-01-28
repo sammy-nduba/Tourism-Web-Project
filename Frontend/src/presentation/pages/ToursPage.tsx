@@ -1,18 +1,9 @@
-import React from 'react';
-import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { TourCard } from '../components/Tours/TourCard';
 import { useTours } from '../hooks/useTours';
+import { TourCardSkeleton } from '../components/UI/Skeleton';
 
 export function ToursPage() {
   const { tours, loading, error } = useTours();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -34,7 +25,7 @@ export function ToursPage() {
             Adventure Tours
           </h1>
           <p className="text-xl text-emerald-100 max-w-3xl mx-auto">
-            Discover East Africa through our carefully crafted adventure tours. From wildlife safaris 
+            Discover East Africa through our carefully crafted adventure tours. From wildlife safaris
             to mountain trekking, each journey offers unique experiences and meaningful connections.
           </p>
         </div>
@@ -43,14 +34,20 @@ export function ToursPage() {
       {/* Tours Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {tours && tours.data.length > 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <TourCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : tours && tours.data.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {tours.data.map((tour) => (
                   <TourCard key={tour.id} tour={tour} />
                 ))}
               </div>
-              
+
               {tours.meta.totalPages > 1 && (
                 <div className="mt-12 flex justify-center">
                   <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-lg shadow">

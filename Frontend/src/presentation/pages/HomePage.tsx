@@ -1,10 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Globe, Heart, Users, Award } from 'lucide-react';
 import { Button } from '../components/UI/Button';
-import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { TourCard } from '../components/Tours/TourCard';
 import { CountryCard } from '../components/Countries/CountryCard';
+import { TourCardSkeleton, CountryCardSkeleton } from '../components/UI/Skeleton';
 import { useFeaturedTours } from '../hooks/useTours';
 import { useCountries } from '../hooks/useCountries';
 import { ROUTES } from '../../shared/constants';
@@ -29,7 +28,7 @@ export function HomePage() {
             <span className="block text-emerald-300">Adventures</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-gray-100 max-w-2xl mx-auto leading-relaxed">
-            Discover the heart of East Africa through responsible travel and conservation efforts 
+            Discover the heart of East Africa through responsible travel and conservation efforts
             in Kenya, Uganda, Tanzania, and Rwanda.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -57,13 +56,17 @@ export function HomePage() {
               Explore East Africa
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              From Kenya's savannas to Rwanda's mountains, discover the diverse landscapes and cultures 
+              From Kenya's savannas to Rwanda's mountains, discover the diverse landscapes and cultures
               of East Africa.
             </p>
           </div>
 
           {countriesLoading ? (
-            <LoadingSpinner size="lg" className="py-12" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {[...Array(4)].map((_, i) => (
+                <CountryCardSkeleton key={i} />
+              ))}
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -71,7 +74,7 @@ export function HomePage() {
                   <CountryCard key={country.id} country={country} />
                 ))}
               </div>
-              
+
               <div className="text-center">
                 <Button size="lg" variant="outline" asChild>
                   <Link to={ROUTES.COUNTRIES}>
@@ -85,7 +88,7 @@ export function HomePage() {
         </div>
       </section>
 
-     
+
 
       {/* Featured Tours Section */}
       <section className="py-16 bg-gray-50">
@@ -100,7 +103,11 @@ export function HomePage() {
           </div>
 
           {toursLoading ? (
-            <LoadingSpinner size="lg" className="py-12" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {[...Array(3)].map((_, i) => (
+                <TourCardSkeleton key={i} />
+              ))}
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
@@ -108,7 +115,7 @@ export function HomePage() {
                   <TourCard key={tour.id} tour={tour} />
                 ))}
               </div>
-              
+
               <div className="text-center">
                 <Button size="lg" asChild>
                   <Link to={ROUTES.TOURS}>
@@ -122,7 +129,7 @@ export function HomePage() {
         </div>
       </section>
 
-      
+
 
       {/* Mission Section */}
       <section className="py-16 bg-emerald-50">
@@ -133,8 +140,8 @@ export function HomePage() {
                 Adventure with Purpose
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Every journey with Wild Horizon Adventures supports local communities and conservation 
-                efforts. We believe in responsible travel that creates positive impact for wildlife, 
+                Every journey with Wild Horizon Adventures supports local communities and conservation
+                efforts. We believe in responsible travel that creates positive impact for wildlife,
                 environments, and people.
               </p>
               <ul className="space-y-4 mb-8">
@@ -178,7 +185,7 @@ export function HomePage() {
       </section>
 
 
-       {/* Stats Section */}
+      {/* Stats Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -213,7 +220,7 @@ export function HomePage() {
             Ready for Your Adventure?
           </h2>
           <p className="text-xl mb-8 text-emerald-100">
-            Join us in exploring East Africa while making a positive impact on conservation 
+            Join us in exploring East Africa while making a positive impact on conservation
             and local communities.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

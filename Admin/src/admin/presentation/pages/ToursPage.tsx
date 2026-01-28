@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../../services/AdminService';
-import { Plus, CreditCard as Edit, Trash2, Eye, EyeOff, X, Upload } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Eye, EyeOff, X, Upload, Calendar, Trash } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/database.types';
 
@@ -32,6 +32,22 @@ type Tour = {
   } | null;
 };
 
+interface ItineraryDay {
+  day: number;
+  title: string;
+  description: string;
+  activities: string[];
+  accommodation: string;
+  meals: string[];
+}
+
+interface AvailabilitySlot {
+  startDate: string;
+  endDate: string;
+  spotsAvailable: number;
+  totalSpots: number;
+}
+
 interface TourFormData {
   title: string;
   slug: string;
@@ -45,9 +61,17 @@ interface TourFormData {
   image_url: string;
   image_file: File | null;
   gallery_urls: string[];
+  gallery_files: File[];
   highlights: string[];
   included: string[];
   excluded: string[];
+  itinerary: ItineraryDay[];
+  what_to_bring: string[];
+  tags: string[];
+  min_age: number;
+  physical_rating: number;
+  featured: boolean;
+  availability: AvailabilitySlot[];
   is_published: boolean;
 }
 type TourInsert = Database['public']['Tables']['tours']['Insert'];
@@ -71,9 +95,17 @@ export function ToursPage() {
     image_url: '',
     image_file: null,
     gallery_urls: [],
+    gallery_files: [],
     highlights: [],
     included: [],
     excluded: [],
+    itinerary: [],
+    what_to_bring: [],
+    tags: [],
+    min_age: 12,
+    physical_rating: 2,
+    featured: false,
+    availability: [],
     is_published: false,
   });
   const [saving, setSaving] = useState(false);
@@ -196,10 +228,21 @@ export function ToursPage() {
     setSaving(true);
     try {
       let imageUrl = formData.image_url;
-      
+
       // Upload image if a new file was selected
       if (formData.image_file) {
         imageUrl = await handleImageUpload(formData.image_file);
+      }
+
+      // Upload gallery images
+      const uploadedGalleryUrls = [...formData.gallery_urls];
+      for (const file of formData.gallery_files) {
+        try {
+          const url = await handleImageUpload(file);
+          uploadedGalleryUrls.push(url);
+        } catch (err) {
+          console.error('Failed to upload gallery image:', err);
+        }
       }
 
       // Look up city by name and country
@@ -208,7 +251,7 @@ export function ToursPage() {
         try {
           const matchedCity = cities.find(
             (c: any) => c.name.toLowerCase() === formData.city_name.toLowerCase() &&
-                       c.countries?.name?.toLowerCase() === formData.country_name.toLowerCase()
+              c.countries?.name?.toLowerCase() === formData.country_name.toLowerCase()
           );
           city_id = matchedCity?.id || null;
         } catch (error) {
@@ -226,33 +269,23 @@ export function ToursPage() {
         difficulty_level: formData.difficulty_level,
         max_group_size: formData.max_group_size,
         image_url: imageUrl,
-        gallery_urls: formData.gallery_urls,
+        gallery_urls: uploadedGalleryUrls,
         highlights: formData.highlights,
         included: formData.included,
         excluded: formData.excluded,
+        itinerary: formData.itinerary as any,
+        what_to_bring: formData.what_to_bring,
+        tags: formData.tags,
+        min_age: formData.min_age,
+        physical_rating: formData.physical_rating,
+        featured: formData.featured,
+        availability: formData.availability as any,
         is_published: formData.is_published,
       };
 
       await adminService.createTour(tourData);
       setShowAddModal(false);
-      setFormData({
-        title: '',
-        slug: '',
-        description: '',
-        country_name: '',
-        city_name: '',
-        duration_days: 1,
-        price: 0,
-        difficulty_level: 'Budget',
-        max_group_size: 10,
-        image_url: '',
-        image_file: null,
-        gallery_urls: [],
-        highlights: [],
-        included: [],
-        excluded: [],
-        is_published: false,
-      });
+      resetForm();
       await loadTours();
     } catch (error) {
       console.error('Failed to create tour:', error);
@@ -276,11 +309,137 @@ export function ToursPage() {
       image_url: '',
       image_file: null,
       gallery_urls: [],
+      gallery_files: [],
       highlights: [],
       included: [],
       excluded: [],
+      itinerary: [],
+      what_to_bring: [],
+      tags: [],
+      min_age: 12,
+      physical_rating: 2,
+      featured: false,
+      availability: [],
       is_published: false,
     });
+  };
+
+  const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files).filter(file => {
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name} is not a valid image file`);
+          return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`${file.name} is too large (max 5MB)`);
+          return false;
+        }
+        return true;
+      });
+      setFormData(prev => ({
+        ...prev,
+        gallery_files: [...prev.gallery_files, ...newFiles]
+      }));
+    }
+  };
+
+  const removeGalleryFile = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery_files: prev.gallery_files.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addItineraryDay = () => {
+    const nextDay = formData.itinerary.length + 1;
+    setFormData(prev => ({
+      ...prev,
+      itinerary: [
+        ...prev.itinerary,
+        {
+          day: nextDay,
+          title: '',
+          description: '',
+          activities: [],
+          accommodation: '',
+          meals: []
+        }
+      ]
+    }));
+  };
+
+  const updateItineraryDay = (index: number, field: keyof ItineraryDay, value: any) => {
+    setFormData(prev => {
+      const newItinerary = [...prev.itinerary];
+      newItinerary[index] = { ...newItinerary[index], [field]: value };
+      return { ...prev, itinerary: newItinerary };
+    });
+  };
+
+  const removeItineraryDay = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      itinerary: prev.itinerary
+        .filter((_, i) => i !== index)
+        .map((day, i) => ({ ...day, day: i + 1 }))
+    }));
+  };
+
+  const handleArrayAdd = (field: keyof TourFormData, value: string) => {
+    if (!value.trim()) return;
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...(prev[field] as string[]), value.trim()]
+    }));
+  };
+
+  const handleArrayRemove = (field: keyof TourFormData, index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: (prev[field] as any[]).filter((_, i) => i !== index)
+    }));
+  };
+
+  const addAvailabilitySlot = () => {
+    setFormData(prev => ({
+      ...prev,
+      availability: [
+        ...prev.availability,
+        {
+          startDate: '',
+          endDate: '',
+          spotsAvailable: prev.max_group_size || 10,
+          totalSpots: prev.max_group_size || 10
+        }
+      ]
+    }));
+  };
+
+  const updateAvailabilitySlot = (index: number, field: keyof AvailabilitySlot, value: any) => {
+    setFormData(prev => {
+      const newAvailability = [...prev.availability];
+      // If updating totalSpots, potentially update spotsAvailable too if it hasn't been manually tweaked
+      if (field === 'totalSpots') {
+        const spotNum = parseInt(value) || 0;
+        newAvailability[index] = {
+          ...newAvailability[index],
+          totalSpots: spotNum,
+          spotsAvailable: spotNum // For new entries, keep them in sync
+        };
+      } else {
+        newAvailability[index] = { ...newAvailability[index], [field]: value };
+      }
+      return { ...prev, availability: newAvailability };
+    });
+  };
+
+  const removeAvailabilitySlot = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      availability: prev.availability.filter((_, i) => i !== index)
+    }));
   };
 
   if (loading) {
@@ -369,11 +528,10 @@ export function ToursPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => togglePublish(tour)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                          tour.is_published
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${tour.is_published
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600'
+                          }`}
                       >
                         {tour.is_published ? (
                           <>
@@ -566,6 +724,11 @@ export function ToursPage() {
                               <p className="text-sm font-medium text-emerald-600">{formData.image_file.name}</p>
                               <p className="text-xs text-slate-500">Ready to upload</p>
                             </>
+                          ) : formData.image_url ? (
+                            <>
+                              <img src={formData.image_url} alt="Preview" className="h-20 w-auto object-cover rounded mb-2" />
+                              <p className="text-xs text-slate-500">Existing image</p>
+                            </>
                           ) : (
                             <>
                               <Upload className="w-8 h-8 text-slate-400 mb-2" />
@@ -586,6 +749,336 @@ export function ToursPage() {
                       </label>
                     </div>
                   </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Gallery Images
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {formData.gallery_urls.map((url, index) => (
+                      <div key={`url-${index}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-200">
+                        <img src={url} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleArrayRemove('gallery_urls', index)}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {formData.gallery_files.map((file, index) => (
+                      <div key={`file-${index}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+                        <p className="text-[10px] text-slate-500 truncate px-2">{file.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryFile(index)}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-2 pb-3">
+                      <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                      <p className="text-xs text-slate-600">Add Gallery Images</p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleGalleryFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Highlights */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Highlights</label>
+                  <div className="space-y-2">
+                    {formData.highlights.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm bg-slate-50 px-3 py-1 rounded border border-slate-200">{item}</span>
+                        <button type="button" onClick={() => handleArrayRemove('highlights', index)} className="text-red-500 hover:text-red-700"><Trash className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input type="text" id="new-highlight" placeholder="Add highlight..." className="flex-1 px-3 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleArrayAdd('highlights', (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+                      <button type="button" onClick={() => { const input = document.getElementById('new-highlight') as HTMLInputElement; handleArrayAdd('highlights', input.value); input.value = ''; }} className="px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-xs font-medium">Add</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Included */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Included</label>
+                  <div className="space-y-2">
+                    {formData.included.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm bg-slate-50 px-3 py-1 rounded border border-slate-200">{item}</span>
+                        <button type="button" onClick={() => handleArrayRemove('included', index)} className="text-red-500 hover:text-red-700"><Trash className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input type="text" id="new-included" placeholder="Add included..." className="flex-1 px-3 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleArrayAdd('included', (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Excluded */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Excluded</label>
+                  <div className="space-y-2">
+                    {formData.excluded.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm bg-slate-50 px-3 py-1 rounded border border-slate-200">{item}</span>
+                        <button type="button" onClick={() => handleArrayRemove('excluded', index)} className="text-red-500 hover:text-red-700"><Trash className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input type="text" id="new-excluded" placeholder="Add excluded..." className="flex-1 px-3 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleArrayAdd('excluded', (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* What to Bring */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">What to Bring</label>
+                  <div className="space-y-2">
+                    {formData.what_to_bring.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm bg-slate-50 px-3 py-1 rounded border border-slate-200">{item}</span>
+                        <button type="button" onClick={() => handleArrayRemove('what_to_bring', index)} className="text-red-500 hover:text-red-700"><Trash className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input type="text" id="new-wtb" placeholder="Add item..." className="flex-1 px-3 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleArrayAdd('what_to_bring', (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Tags</label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {formData.tags.map((tag, index) => (
+                        <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">
+                          {tag}
+                          <button type="button" onClick={() => handleArrayRemove('tags', index)}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                    <input type="text" id="new-tag" placeholder="Add tag..." className="w-full px-3 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleArrayAdd('tags', (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+                  </div>
+                </div>
+
+                {/* Additional Stats */}
+                <div className="grid grid-cols-2 gap-4 md:col-span-2 p-4 bg-slate-50 rounded-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Min Age</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.min_age}
+                      onChange={(e) => handleInputChange('min_age', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Physical Rating (1-5)</label>
+                    <select
+                      value={formData.physical_rating}
+                      onChange={(e) => handleInputChange('physical_rating', parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                    >
+                      {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v} - {v === 1 ? 'Easy' : v === 3 ? 'Moderate' : v === 5 ? 'Extreme' : v}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center col-span-2">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={formData.featured}
+                      onChange={(e) => handleInputChange('featured', e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <label htmlFor="featured" className="ml-2 text-sm text-slate-700 font-medium">Featured Tour</label>
+                  </div>
+                </div>
+
+                {/* Availability Section */}
+                <div className="md:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Availability & Booking Slots
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={addAvailabilitySlot}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Slot
+                    </button>
+                  </div>
+
+                  {formData.availability.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                      <p className="text-sm text-slate-500">No availability slots added. Users won't be able to book this tour.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {formData.availability.map((slot, index) => (
+                        <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-slate-50 rounded-lg relative group">
+                          <button
+                            type="button"
+                            onClick={() => removeAvailabilitySlot(index)}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Start Date</label>
+                            <input
+                              type="date"
+                              value={slot.startDate}
+                              onChange={(e) => updateAvailabilitySlot(index, 'startDate', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">End Date</label>
+                            <input
+                              type="date"
+                              value={slot.endDate}
+                              onChange={(e) => updateAvailabilitySlot(index, 'endDate', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Total Spots</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={slot.totalSpots}
+                              onChange={(e) => updateAvailabilitySlot(index, 'totalSpots', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Spots Available</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={slot.spotsAvailable}
+                              onChange={(e) => updateAvailabilitySlot(index, 'spotsAvailable', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Itinerary Section */}
+                <div className="md:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+                    <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Itinerary Builder
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={addItineraryDay}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 text-sm font-medium transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Day
+                    </button>
+                  </div>
+
+                  {formData.itinerary.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                      <p className="text-sm text-slate-500">No itinerary days added yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {formData.itinerary.map((day, index) => (
+                        <div key={index} className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-emerald-600 uppercase tracking-wider">Day {day.day}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeItineraryDay(index)}
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                              <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Day Title</label>
+                              <input
+                                type="text"
+                                value={day.title}
+                                onChange={(e) => updateItineraryDay(index, 'title', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500"
+                                placeholder="e.g., Arrival and Pick-up"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Description</label>
+                              <textarea
+                                value={day.description}
+                                onChange={(e) => updateItineraryDay(index, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500"
+                                placeholder="What happens on this day?"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Accommodation</label>
+                              <input
+                                type="text"
+                                value={day.accommodation}
+                                onChange={(e) => updateItineraryDay(index, 'accommodation', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-emerald-500"
+                                placeholder="Hotel or Camp name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Meals</label>
+                              <div className="flex flex-wrap gap-2">
+                                {['Breakfast', 'Lunch', 'Dinner'].map(meal => (
+                                  <label key={meal} className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={day.meals.includes(meal)}
+                                      onChange={(e) => {
+                                        const newMeals = e.target.checked
+                                          ? [...day.meals, meal]
+                                          : day.meals.filter(m => m !== meal);
+                                        updateItineraryDay(index, 'meals', newMeals);
+                                      }}
+                                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="text-xs text-slate-600">{meal}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

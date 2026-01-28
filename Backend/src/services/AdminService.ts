@@ -63,7 +63,7 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('id', id)
       .single();
@@ -77,12 +77,18 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('slug', slug)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // If the error is "not found", return null instead of throwing
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
     return data as Tour;
   }
 
@@ -124,7 +130,7 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `);
 
     // If we have city IDs from country filter, use them
@@ -170,63 +176,55 @@ export class AdminService {
   }
 
   async getPublishedTours(filters: TourFilters = {}): Promise<Tour[]> {
-    // If filtering by country, first get the country ID by code, then get city IDs for that country
-    let cityIds: string[] | undefined;
-    if (filters.country) {
-      // Check if filters.country is a country code (2-3 chars), UUID format, or invalid
-      const isCountryCode = filters.country.length <= 3 && /^[a-z]{2,3}$/i.test(filters.country);
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.country);
-      
-      if (isCountryCode) {
-        // Look up country by code
-        const { data: countryData, error: countryError } = await supabase
-          .from('countries')
-          .select('id')
-          .eq('code', filters.country.toUpperCase())
-          .single();
-
-        if (countryError || !countryData) {
-          // Country not found, return empty results
-          return [];
-        }
-
-        const countryId = countryData.id;
-        const { data: cities, error: citiesError } = await supabase
-          .from('cities')
-          .select('id')
-          .eq('country_id', countryId);
-
-        if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
-        cityIds = cities?.map(c => c.id) || [];
-      } else if (isUUID) {
-        // It's a country ID (UUID), fetch cities for it
-        const { data: cities, error: citiesError } = await supabase
-          .from('cities')
-          .select('id')
-          .eq('country_id', filters.country);
-
-        if (citiesError) throw new Error(`Failed to fetch cities: ${citiesError.message}`);
-        cityIds = cities?.map(c => c.id) || [];
-      } else {
-        // Invalid format, return empty results (don't throw error)
-        return [];
-      }
-    }
-
     let query = supabase
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('is_published', true);
 
-    // If we have city IDs from country filter, use them
-    if (cityIds && cityIds.length > 0) {
-      query = query.in('city_id', cityIds);
-    } else if (filters.country) {
-      // Country filter was specified but no cities found
-      return [];
+    if (filters.country) {
+      const countryInput = filters.country;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(countryInput);
+
+      if (isUUID) {
+        // If it looks like a UUID, filter by the specific country records linked via cities
+        // Since we can't filter nested without !inner in basic syntax, 
+        // we'll stick to the city lookup but make it more resilient.
+        const { data: cities } = await supabase
+          .from('cities')
+          .select('id')
+          .eq('country_id', countryInput);
+
+        if (cities && cities.length > 0) {
+          query = query.in('city_id', cities.map(c => c.id));
+        } else {
+          return [];
+        }
+      } else {
+        // Handle common slugs like "ke", "tz" or full names
+        const { data: countries } = await supabase
+          .from('countries')
+          .select('id')
+          .or(`code.eq.${countryInput.toUpperCase()},name.ilike.${countryInput}`);
+
+        if (countries && countries.length > 0) {
+          const countryIds = countries.map(c => c.id);
+          const { data: cities } = await supabase
+            .from('cities')
+            .select('id')
+            .in('country_id', countryIds);
+
+          if (cities && cities.length > 0) {
+            query = query.in('city_id', cities.map(c => c.id));
+          } else {
+            return [];
+          }
+        } else {
+          return [];
+        }
+      }
     }
 
     if (filters.city) {
@@ -272,7 +270,7 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('is_published', true)
       .eq('featured', true)
@@ -288,7 +286,7 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('is_published', true);
 
@@ -327,7 +325,7 @@ export class AdminService {
       .from('tours')
       .select(`
         *,
-        city:cities(*, country:countries(*))
+        cities(*, countries(*))
       `)
       .eq('is_published', true);
 

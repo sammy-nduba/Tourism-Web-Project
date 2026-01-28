@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { TourCard } from '../components/Tours/TourCard';
-import { LoadingSpinner } from '../components/UI/LoadingSpinner';
-import { useTours } from '../hooks/useTours';
 import { useCountries } from '../hooks/useCountries';
 import { SearchFilters } from '../../shared/types';
 import { TourSummary } from '../../domain/models';
-import { API_BASE_URL } from '../../shared/constants';
+import { toursService } from '../../data/services/ToursService';
+import { TourCardSkeleton } from '../components/UI/Skeleton';
 
 export function CountryToursPage() {
   const { country: countrySlug } = useParams<{ country: string }>();
@@ -33,51 +32,8 @@ export function CountryToursPage() {
           limit: 50 // Get all tours for this country
         };
 
-        const response = await fetch(`${API_BASE_URL}/api/tours?${new URLSearchParams({
-          country: countrySlug,
-          limit: '50'
-        })}`);
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch tours');
-        }
-
-        const backendTours = await response.json();
-
-        // Transform backend tours to frontend format
-        const transformedTours: TourSummary[] = backendTours.map((tour: any) => {
-          // Get country name from nested cities->countries data
-          const countryName = tour.cities?.countries?.name || currentCountry?.name || 'Unknown';
-          const countryNameLower = countryName.toLowerCase() as any;
-          
-          return {
-            id: tour.id,
-            title: tour.title,
-            slug: tour.slug,
-            summary: tour.description?.substring(0, 150) + '...' || '',
-            category: 'wildlife', // Default category
-            duration: tour.duration_days,
-            price: {
-              amount: tour.price,
-              currency: 'USD',
-              includes: tour.included || [],
-              excludes: tour.excluded || [],
-            },
-            heroImage: {
-              id: `${tour.id}-hero`,
-              url: tour.image_url,
-              alt: tour.title,
-            },
-            country: countryNameLower,
-            city: tour.cities?.name || 'Various',
-            rating: 4.5,
-            reviewCount: 0,
-            featured: tour.is_published,
-            difficultyLevel: tour.difficulty_level,
-          };
-        });
-
-        setTours(transformedTours);
+        const response = await toursService.getTours(filters);
+        setTours(response.data);
       } catch (err) {
         console.error('Error loading country tours:', err);
         setError(err instanceof Error ? err.message : 'Failed to load tours');
@@ -89,15 +45,7 @@ export function CountryToursPage() {
     loadCountryTours();
   }, [countrySlug]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (error || !currentCountry) {
+  if (error || (!loading && !currentCountry)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -135,20 +83,20 @@ export function CountryToursPage() {
           </div>
 
           <div className="flex items-center mb-4">
-            <span className="text-4xl mr-4">{currentCountry.flag}</span>
+            <span className="text-4xl mr-4">{currentCountry?.flag || '🌍'}</span>
             <div>
               <h1 className="text-4xl md:text-5xl font-bold">
-                Adventures in {currentCountry.name}
+                {currentCountry ? `Adventures in ${currentCountry.name}` : 'Explore Adventures'}
               </h1>
               <p className="text-xl text-emerald-100 mt-2">
-                Discover incredible experiences in {currentCountry.name}
+                {currentCountry ? `Discover incredible experiences in ${currentCountry.name}` : 'Explore East Africa'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center text-emerald-100">
             <MapPin className="w-5 h-5 mr-2" />
-            <span>{currentCountry.capital} • {tours.length} adventures available</span>
+            <span>{currentCountry?.capital || ''} • {loading ? '...' : tours.length} adventures available</span>
           </div>
         </div>
       </section>
@@ -156,11 +104,17 @@ export function CountryToursPage() {
       {/* Tours Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {tours.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <TourCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : tours.length === 0 ? (
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">No Tours Available</h2>
               <p className="text-gray-600 mb-6">
-                We're currently working on adding amazing adventures in {currentCountry.name}.
+                We're currently working on adding amazing adventures in {currentCountry?.name || 'this destination'}.
                 Check back soon for new experiences!
               </p>
               <Link
@@ -177,7 +131,7 @@ export function CountryToursPage() {
                   Available Adventures
                 </h2>
                 <p className="text-gray-600">
-                  Discover {tours.length} incredible experience{tours.length !== 1 ? 's' : ''} in {currentCountry.name}
+                  Discover {tours.length} incredible experience{tours.length !== 1 ? 's' : ''} in {currentCountry?.name || 'this destination'}
                 </p>
               </div>
 
@@ -196,16 +150,16 @@ export function CountryToursPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why Visit {currentCountry.name}?
+              Why Visit {currentCountry?.name || 'this destination'}?
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              {currentCountry.description}
+              {currentCountry?.description || ''}
             </p>
           </div>
 
-          {currentCountry.highlights.length > 0 && (
+          {currentCountry && currentCountry.highlights && currentCountry.highlights.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentCountry.highlights.map((highlight, index) => (
+              {currentCountry.highlights.map((highlight: string, index: number) => (
                 <div key={index} className="text-center">
                   <div className="bg-emerald-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">{currentCountry.flag}</span>

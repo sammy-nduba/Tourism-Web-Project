@@ -1,18 +1,10 @@
 import React from 'react';
-import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { CountryCard } from '../components/Countries/CountryCard';
 import { useCountries } from '../hooks/useCountries';
+import { CountryCardSkeleton } from '../components/UI/Skeleton';
 
 export function CountriesPage() {
   const { countries, loading, error } = useCountries();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -34,7 +26,7 @@ export function CountriesPage() {
             Explore East Africa
           </h1>
           <p className="text-xl text-emerald-100 max-w-3xl mx-auto">
-            Discover the diverse landscapes, incredible wildlife, and rich cultures of Kenya, 
+            Discover the diverse landscapes, incredible wildlife, and rich cultures of Kenya,
             Uganda, Tanzania, and Rwanda through our carefully curated adventures.
           </p>
         </div>
@@ -43,11 +35,19 @@ export function CountriesPage() {
       {/* Countries Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {countries.map((country) => (
-              <CountryCard key={country.id} country={country} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[...Array(4)].map((_, i) => (
+                <CountryCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {countries.map((country) => (
+                <CountryCard key={country.id} country={country} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -61,21 +61,21 @@ export function CountriesPage() {
             <div>
               <h3 className="font-semibold text-lg text-gray-900 mb-3">Incredible Wildlife</h3>
               <p className="text-gray-600">
-                Home to the Big Five, mountain gorillas, and the Great Migration, East Africa 
+                Home to the Big Five, mountain gorillas, and the Great Migration, East Africa
                 offers unparalleled wildlife viewing opportunities.
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-900 mb-3">Rich Cultures</h3>
               <p className="text-gray-600">
-                Experience vibrant traditions, meet local communities, and learn about centuries-old 
+                Experience vibrant traditions, meet local communities, and learn about centuries-old
                 cultures that continue to thrive today.
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-900 mb-3">Conservation Impact</h3>
               <p className="text-gray-600">
-                Your travels directly support conservation efforts and community development projects 
+                Your travels directly support conservation efforts and community development projects
                 throughout the region.
               </p>
             </div>

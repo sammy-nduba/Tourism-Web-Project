@@ -39,6 +39,7 @@ export const ROUTES = {
   FAQ: '/faq',
   PRIVACY: '/privacy',
   TERMS: '/terms',
+  BOOKING_SUCCESS: '/booking/success',
 } as const;
 
 export const PAGINATION = {

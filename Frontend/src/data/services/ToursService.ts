@@ -18,6 +18,12 @@ interface BackendTour {
   highlights: any;
   included: any;
   excluded: any;
+  itinerary: any;
+  what_to_bring: any;
+  tags: any;
+  min_age: number;
+  physical_rating: number;
+  featured: boolean;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -31,9 +37,7 @@ interface BackendTour {
   } | null;
 }
 
-interface BackendTourSummary extends Omit<BackendTour, 'description' | 'gallery_urls' | 'highlights' | 'included' | 'excluded' | 'itinerary' | 'reviews'> {
-  summary?: string;
-}
+
 
 export class ToursService {
   private async apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -80,19 +84,19 @@ export class ToursService {
       },
       country: tour.cities?.countries?.name?.toLowerCase() as any || 'kenya',
       city: tour.cities?.name || 'Nairobi',
-      itinerary: [], // Would need to be added to backend
+      itinerary: tour.itinerary || [],
       includes: tour.included || [],
       excludes: tour.excluded || [],
-      whatToBring: [], // Would need to be added to backend
+      whatToBring: tour.what_to_bring || [],
       availability: [], // Would need to be added to backend
       reviews: [], // Would need to be added to backend
       rating: 4.5, // Default rating
       reviewCount: 0, // Default count
-      featured: tour.is_published,
+      featured: tour.featured || tour.is_published,
       maxGroupSize: tour.max_group_size,
-      minAge: 12, // Default minimum age
-      physicalRating: 2, // Default physical rating
-      tags: tour.highlights || [],
+      minAge: tour.min_age || 12,
+      physicalRating: tour.physical_rating || 2,
+      tags: tour.tags || tour.highlights || [],
     };
   }
 

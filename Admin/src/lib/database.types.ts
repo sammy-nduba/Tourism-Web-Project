@@ -364,6 +364,13 @@ export interface Database {
           highlights: Json
           included: Json
           excluded: Json
+          itinerary: Json
+          what_to_bring: Json
+          tags: Json
+          min_age: number
+          physical_rating: number
+          featured: boolean
+          availability: Json
           is_published: boolean
           created_at: string
           updated_at: string
@@ -383,6 +390,13 @@ export interface Database {
           highlights?: Json
           included?: Json
           excluded?: Json
+          itinerary?: Json
+          what_to_bring?: Json
+          tags?: Json
+          min_age?: number
+          physical_rating?: number
+          featured?: boolean
+          availability?: Json
           is_published?: boolean
           created_at?: string
           updated_at?: string
@@ -402,6 +416,13 @@ export interface Database {
           highlights?: Json
           included?: Json
           excluded?: Json
+          itinerary?: Json
+          what_to_bring?: Json
+          tags?: Json
+          min_age?: number
+          physical_rating?: number
+          featured?: boolean
+          availability?: Json
           is_published?: boolean
           created_at?: string
           updated_at?: string
