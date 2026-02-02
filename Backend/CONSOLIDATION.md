@@ -15,7 +15,7 @@ Backend/
 │   │   ├── tours.ts
 │   │   ├── countries.ts
 │   │   └── search.ts
-│   ├── services/        # Business logic
+│   ├── services/        # BusiConsolidate the Backend into one server?ness logic
 │   │   └── AdminService.ts
 │   ├── types/           # TypeScript definitions
 │   │   └── database.ts

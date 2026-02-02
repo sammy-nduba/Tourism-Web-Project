@@ -9,11 +9,11 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: ROUTES.HOME },
-    { name: 'Destinations', href: ROUTES.COUNTRIES },
+    // { name: 'Destinations', href: ROUTES.COUNTRIES },
     { name: 'Adventures', href: ROUTES.TOURS },
-    { name: 'Programs', href: ROUTES.PROGRAMS },
-    { name: 'Stories', href: ROUTES.BLOG },
-    { name: 'Get Involved', href: ROUTES.DONATE },
+    // { name: 'Programs', href: ROUTES.PROGRAMS },
+    // { name: 'Stories', href: ROUTES.BLOG },
+    // { name: 'Get Involved', href: ROUTES.DONATE },
     { name: 'About', href: ROUTES.ABOUT },
     { name: 'Contact', href: ROUTES.CONTACT },
   ];

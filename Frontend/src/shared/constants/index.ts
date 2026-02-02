@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
 
 export const ROUTES = {
   HOME: '/',
-  COUNTRIES: '/destinations',
+  // COUNTRIES: '/destinations',
   COUNTRY: '/adventures/:country',
   CITY: '/destinations/:country/:city',
   TOURS: '/adventures',

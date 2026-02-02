@@ -29,7 +29,7 @@ function App() {
         <PageWrapper>
           <Routes>
             <Route path={ROUTES.HOME} element={<HomePage />} />
-            <Route path={ROUTES.COUNTRIES} element={<CountriesPage />} />
+            {/* <Route path={ROUTES.COUNTRIES} element={<CountriesPage />} /> */}
             <Route path="/destinations/:country" element={<CountryToursPage />} />
             <Route path={ROUTES.TOURS} element={<ToursPage />} />
             <Route path={ROUTES.ABOUT} element={<AboutPage />} />
