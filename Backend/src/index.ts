@@ -34,6 +34,8 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+app.set('trust proxy', 1);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
@@ -59,6 +61,15 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('combined'));
 }
+
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Wild Horizon API is running 🚀',
+    health: '/health'
+  });
+});
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
