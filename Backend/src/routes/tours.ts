@@ -9,6 +9,7 @@ router.get('/admin/all', async (req, res) => {
     const {
       country,
       city,
+      category,
       limit,
       offset,
       page
@@ -18,6 +19,7 @@ router.get('/admin/all', async (req, res) => {
 
     if (country) filters.country = country as string;
     if (city) filters.city = city as string;
+    if (category) filters.category = category as string;
     if (limit) filters.limit = parseInt(limit as string);
     if (offset) filters.offset = parseInt(offset as string);
     if (page) filters.offset = (parseInt(page as string) - 1) * (filters.limit || 50);
@@ -40,6 +42,7 @@ router.get('/', async (req, res) => {
     const {
       country,
       city,
+      category,
       limit,
       offset,
       featured,
@@ -50,6 +53,7 @@ router.get('/', async (req, res) => {
 
     if (country) filters.country = country as string;
     if (city) filters.city = city as string;
+    if (category) filters.category = category as string;
     if (limit) filters.limit = parseInt(limit as string);
     if (offset) filters.offset = parseInt(offset as string);
     if (page) filters.offset = (parseInt(page as string) - 1) * (filters.limit || 10);
@@ -135,11 +139,11 @@ router.post('/', async (req, res) => {
 
     const tour = await adminService.createTour(tourData);
     return res.status(201).json(tour);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating tour:', error);
     return res.status(500).json({
       error: 'Failed to create tour',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error.message || (typeof error === 'string' ? error : 'Unknown error')
     });
   }
 });
@@ -151,11 +155,11 @@ router.put('/:id', async (req, res) => {
     const updates = req.body;
     const tour = await adminService.updateTour(req.params.id, updates);
     return res.json(tour);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating tour:', error);
     return res.status(500).json({
       error: 'Failed to update tour',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error.message || (typeof error === 'string' ? error : 'Unknown error')
     });
   }
 });

@@ -372,6 +372,7 @@ export interface Database {
           featured: boolean
           availability: Json
           is_published: boolean
+          category: string | null
           created_at: string
           updated_at: string
         }
@@ -398,6 +399,7 @@ export interface Database {
           featured?: boolean
           availability?: Json
           is_published?: boolean
+          category?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -424,6 +426,7 @@ export interface Database {
           featured?: boolean
           availability?: Json
           is_published?: boolean
+          category?: string | null
           created_at?: string
           updated_at?: string
         }

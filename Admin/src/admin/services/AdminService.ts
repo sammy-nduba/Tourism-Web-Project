@@ -6,13 +6,13 @@ const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 };
 
-type Tour = Database['public']['Tables']['tours']['Row'];
-type Program = Database['public']['Tables']['programs']['Row'];
-type BlogPost = Database['public']['Tables']['blog_posts']['Row'];
-type Event = Database['public']['Tables']['events']['Row'];
-type ContactRequest = Database['public']['Tables']['contact_requests']['Row'];
-type DonationRequest = Database['public']['Tables']['donation_requests']['Row'];
-type VolunteerApplication = Database['public']['Tables']['volunteer_applications']['Row'];
+// type Tour = Database['public']['Tables']['tours']['Row'];
+// type Program = Database['public']['Tables']['programs']['Row'];
+// type BlogPost = Database['public']['Tables']['blog_posts']['Row'];
+// type Event = Database['public']['Tables']['events']['Row'];
+// type ContactRequest = Database['public']['Tables']['contact_requests']['Row'];
+// type DonationRequest = Database['public']['Tables']['donation_requests']['Row'];
+// type VolunteerApplication = Database['public']['Tables']['volunteer_applications']['Row'];
 type Country = Database['public']['Tables']['countries']['Row'];
 type City = Database['public']['Tables']['cities']['Row'];
 
@@ -59,6 +59,7 @@ export class AdminService {
       if (filters?.country) params.append('country', filters.country);
       if (filters?.city) params.append('city', filters.city);
       if (filters?.featured) params.append('featured', 'true');
+      if (filters?.category) params.append('category', filters.category);
       if (filters?.limit) params.append('limit', filters.limit.toString());
       if (filters?.offset) params.append('offset', filters.offset.toString());
 

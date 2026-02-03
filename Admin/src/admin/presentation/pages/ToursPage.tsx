@@ -73,6 +73,7 @@ interface TourFormData {
   featured: boolean;
   availability: AvailabilitySlot[];
   is_published: boolean;
+  category: string;
 }
 type TourInsert = Database['public']['Tables']['tours']['Insert'];
 
@@ -107,6 +108,7 @@ export function ToursPage() {
     featured: false,
     availability: [],
     is_published: false,
+    category: 'Classic Bush & Beach Safari',
   });
   const [saving, setSaving] = useState(false);
 
@@ -281,6 +283,7 @@ export function ToursPage() {
         featured: formData.featured,
         availability: formData.availability as any,
         is_published: formData.is_published,
+        category: formData.category,
       };
 
       await adminService.createTour(tourData);
@@ -321,6 +324,7 @@ export function ToursPage() {
       featured: false,
       availability: [],
       is_published: false,
+      category: 'Classic Bush & Beach Safari',
     });
   };
 
@@ -695,6 +699,22 @@ export function ToursPage() {
                     <option value="Comfort">Comfort</option>
                     <option value="Luxury">Luxury</option>
                     <option value="Platinum Experience">Platinum Experience</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    required
+                  >
+                    <option value="Classic Bush & Beach Safari">Classic Bush & Beach Safari</option>
+                    <option value="Safari Immersion">Safari Immersion</option>
+                    <option value="Coastal Getaway">Coastal Getaway</option>
                   </select>
                 </div>
 

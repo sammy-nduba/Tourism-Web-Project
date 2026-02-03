@@ -31,6 +31,7 @@ export interface TourFilters {
   limit?: number;
   offset?: number;
   featured?: boolean;
+  category?: string;
   query?: string;
 }
 
@@ -145,6 +146,10 @@ export class AdminService {
       query = query.eq('city_id', filters.city);
     }
 
+    if (filters.category) {
+      query = query.eq("category", filters.category);
+    }
+
     if (filters.experience_level) {
       query = query.eq('difficulty_level', filters.experience_level);
     }
@@ -225,6 +230,10 @@ export class AdminService {
           return [];
         }
       }
+    }
+
+    if (filters.category) {
+      query = query.eq("category", filters.category);
     }
 
     if (filters.city) {

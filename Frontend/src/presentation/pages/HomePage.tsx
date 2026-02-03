@@ -165,7 +165,7 @@ export function HomePage() {
 
                   <div>
                     <Button size="lg" className="rounded-full px-8" asChild>
-                      <Link to={ROUTES.TOURS}>
+                      <Link to={`${ROUTES.TOURS}?category=${encodeURIComponent(adventure.title)}`}>
                         Explore Now
                         <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                       </Link>

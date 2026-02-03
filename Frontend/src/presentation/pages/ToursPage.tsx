@@ -1,9 +1,12 @@
+import { useSearchParams } from 'react-router-dom';
 import { TourCard } from '../components/Tours/TourCard';
 import { useTours } from '../hooks/useTours';
 import { TourCardSkeleton } from '../components/UI/Skeleton';
 
 export function ToursPage() {
-  const { tours, loading, error } = useTours();
+  const [searchParams] = useSearchParams();
+  const category = searchParams.get('category') || undefined;
+  const { tours, loading, error } = useTours({ category });
 
   if (error) {
     return (
