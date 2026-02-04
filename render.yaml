@@ -5,8 +5,8 @@ services:
     region: oregon
     plan: free
     branch: main
-    buildCommand: cd Backend && npm install && npm run build
-    startCommand: cd Backend && npm start
+    buildCommand: npm ci && npm run build --workspace=Backend
+    startCommand: npm start --workspace=Backend
     envVars:
       - key: NODE_ENV
         value: production
