@@ -8,6 +8,7 @@ export interface TourFilters {
     limit?: number;
     offset?: number;
     featured?: boolean;
+    category?: string;
     query?: string;
 }
 export interface SearchFilters {
@@ -26,6 +27,7 @@ export declare class AdminService {
     getTourBySlug(slug: string): Promise<Tour | null>;
     updateTour(id: string, updates: UpdateTourData): Promise<Tour>;
     deleteTour(id: string): Promise<void>;
+    getTours(filters?: TourFilters): Promise<Tour[]>;
     getPublishedTours(filters?: TourFilters): Promise<Tour[]>;
     getFeaturedTours(limit?: number): Promise<Tour[]>;
     getToursByCountry(filters?: TourFilters): Promise<Tour[]>;

@@ -8,21 +8,38 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import toursRouter from './routes/tours.js';
-import countriesRouter from './routes/countries';
-import searchRouter from './routes/search';
-import { errorHandler } from './middleware/errorHandler';
-import { notFoundHandler } from './middleware/notFoundHandler';
+import countriesRouter from './routes/countries.js';
+import searchRouter from './routes/search.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { notFoundHandler } from './middleware/notFoundHandler.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 if (process.env.HELMET_ENABLED !== 'false') {
     app.use(helmet());
 }
+const defaultAllowedOrigins = [
+    'https://horizontourists.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+];
+const envAllowedOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+const allowedOrigins = new Set([...defaultAllowedOrigins, ...envAllowedOrigins]);
 const corsOptions = {
-    origin: process.env.FRONTEND_URL?.split(',') || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.has(origin))
+            return callback(null, true);
+        return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+app.set('trust proxy', 1);
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
@@ -42,6 +59,12 @@ if (process.env.NODE_ENV === 'development') {
 else {
     app.use(morgan('combined'));
 }
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Wild Horizon API is running 🚀',
+        health: '/health'
+    });
+});
 app.get('/health', (req, res) => {
     res.json({
         status: 'OK',

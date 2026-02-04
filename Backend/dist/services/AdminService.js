@@ -32,8 +32,7 @@ export class AdminService {
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
             .eq('id', id)
             .single();
@@ -46,13 +45,16 @@ export class AdminService {
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
             .eq('slug', slug)
             .single();
-        if (error)
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return null;
+            }
             throw error;
+        }
         return data;
     }
     async updateTour(id, updates) {
@@ -74,23 +76,112 @@ export class AdminService {
         if (error)
             throw error;
     }
+    async getTours(filters = {}) {
+        let cityIds;
+        if (filters.country) {
+            const { data: cities, error: citiesError } = await supabase
+                .from('cities')
+                .select('id')
+                .eq('country_id', filters.country);
+            if (citiesError)
+                throw new Error(`Failed to fetch cities: ${citiesError.message}`);
+            cityIds = cities?.map(c => c.id) || [];
+        }
+        let query = supabase
+            .from('tours')
+            .select(`
+        *,
+        cities(*, countries(*))
+      `);
+        if (cityIds && cityIds.length > 0) {
+            query = query.in('city_id', cityIds);
+        }
+        else if (filters.country) {
+            return [];
+        }
+        if (filters.city) {
+            query = query.eq('city_id', filters.city);
+        }
+        if (filters.category) {
+            query = query.eq("category", filters.category);
+        }
+        if (filters.experience_level) {
+            query = query.eq('difficulty_level', filters.experience_level);
+        }
+        if (filters.min_price) {
+            query = query.gte('price', filters.min_price);
+        }
+        if (filters.max_price) {
+            query = query.lte('price', filters.max_price);
+        }
+        if (filters.query) {
+            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
+        }
+        if (filters.limit) {
+            query = query.limit(filters.limit);
+        }
+        if (filters.offset) {
+            query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+        }
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error)
+            throw error;
+        return data;
+    }
     async getPublishedTours(filters = {}) {
         let query = supabase
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
-            .eq('published', true);
+            .eq('is_published', true);
         if (filters.country) {
-            query = query.eq('country_id', filters.country);
+            const countryInput = filters.country;
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(countryInput);
+            if (isUUID) {
+                const { data: cities } = await supabase
+                    .from('cities')
+                    .select('id')
+                    .eq('country_id', countryInput);
+                if (cities && cities.length > 0) {
+                    query = query.in('city_id', cities.map(c => c.id));
+                }
+                else {
+                    return [];
+                }
+            }
+            else {
+                const { data: countries } = await supabase
+                    .from('countries')
+                    .select('id')
+                    .or(`code.eq.${countryInput.toUpperCase()},name.ilike.${countryInput}`);
+                if (countries && countries.length > 0) {
+                    const countryIds = countries.map(c => c.id);
+                    const { data: cities } = await supabase
+                        .from('cities')
+                        .select('id')
+                        .in('country_id', countryIds);
+                    if (cities && cities.length > 0) {
+                        query = query.in('city_id', cities.map(c => c.id));
+                    }
+                    else {
+                        return [];
+                    }
+                }
+                else {
+                    return [];
+                }
+            }
+        }
+        if (filters.category) {
+            query = query.eq("category", filters.category);
         }
         if (filters.city) {
             query = query.eq('city_id', filters.city);
         }
         if (filters.experience_level) {
-            query = query.eq('experience_level', filters.experience_level);
+            query = query.eq('difficulty_level', filters.experience_level);
         }
         if (filters.min_price) {
             query = query.gte('price', filters.min_price);
@@ -120,10 +211,9 @@ export class AdminService {
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
-            .eq('published', true)
+            .eq('is_published', true)
             .eq('featured', true)
             .limit(limit)
             .order('created_at', { ascending: false });
@@ -136,15 +226,14 @@ export class AdminService {
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
-            .eq('published', true);
+            .eq('is_published', true);
         if (filters.country) {
-            query = query.eq('country_id', filters.country);
+            query = query.eq('city.countries.id', filters.country);
         }
         if (filters.experience_level) {
-            query = query.eq('experience_level', filters.experience_level);
+            query = query.eq('difficulty_level', filters.experience_level);
         }
         if (filters.min_price) {
             query = query.gte('price', filters.min_price);
@@ -168,21 +257,20 @@ export class AdminService {
             .from('tours')
             .select(`
         *,
-        country:tour_countries(*),
-        city:tour_cities(*)
+        cities(*, countries(*))
       `)
-            .eq('published', true);
+            .eq('is_published', true);
         if (filters.query) {
-            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,location.ilike.%${filters.query}%`);
+            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
         }
         if (filters.country) {
-            query = query.eq('country_id', filters.country);
+            query = query.eq('city.countries.id', filters.country);
         }
         if (filters.city) {
             query = query.eq('city_id', filters.city);
         }
         if (filters.experience_level) {
-            query = query.eq('experience_level', filters.experience_level);
+            query = query.eq('difficulty_level', filters.experience_level);
         }
         if (filters.min_price) {
             query = query.gte('price', filters.min_price);
@@ -203,7 +291,7 @@ export class AdminService {
     }
     async getCountries() {
         const { data, error } = await supabase
-            .from('tour_countries')
+            .from('countries')
             .select('*')
             .order('name');
         if (error)
@@ -212,10 +300,10 @@ export class AdminService {
     }
     async getCountryWithCities(countryId) {
         const { data, error } = await supabase
-            .from('tour_countries')
+            .from('countries')
             .select(`
         *,
-        cities:tour_cities(*)
+        cities(*)
       `)
             .eq('id', countryId)
             .single();
@@ -225,7 +313,7 @@ export class AdminService {
     }
     async getCities(countryId) {
         let query = supabase
-            .from('tour_cities')
+            .from('cities')
             .select('*')
             .order('name');
         if (countryId) {

@@ -1,14 +1,43 @@
 import express from 'express';
 import { adminService } from '../services/AdminService.js';
 const router = express.Router();
-router.get('/', async (req, res) => {
+router.get('/admin/all', async (req, res) => {
     try {
-        const { country, city, limit, offset, featured, page } = req.query;
+        const { country, city, category, limit, offset, page } = req.query;
         const filters = {};
         if (country)
             filters.country = country;
         if (city)
             filters.city = city;
+        if (category)
+            filters.category = category;
+        if (limit)
+            filters.limit = parseInt(limit);
+        if (offset)
+            filters.offset = parseInt(offset);
+        if (page)
+            filters.offset = (parseInt(page) - 1) * (filters.limit || 50);
+        const tours = await adminService.getTours(filters);
+        return res.json(tours);
+    }
+    catch (error) {
+        console.error('Error fetching admin tours:', error);
+        return res.status(500).json({
+            error: 'Failed to fetch tours',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+router.get('/', async (req, res) => {
+    try {
+        const { country, city, category, limit, offset, featured, page } = req.query;
+        const filters = {};
+        if (country)
+            filters.country = country;
+        if (city)
+            filters.city = city;
+        if (category)
+            filters.category = category;
         if (limit)
             filters.limit = parseInt(limit);
         if (offset)
@@ -38,6 +67,22 @@ router.get('/featured', async (req, res) => {
         console.error('Error fetching featured tours:', error);
         return res.status(500).json({
             error: 'Failed to fetch featured tours',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+router.get('/slug/:slug', async (req, res) => {
+    try {
+        const tour = await adminService.getTourBySlug(req.params.slug);
+        if (!tour) {
+            return res.status(404).json({ error: 'Tour not found' });
+        }
+        return res.json(tour);
+    }
+    catch (error) {
+        console.error('Error fetching tour by slug:', error);
+        return res.status(500).json({
+            error: 'Failed to fetch tour',
             message: error instanceof Error ? error.message : 'Unknown error'
         });
     }
@@ -74,7 +119,7 @@ router.post('/', async (req, res) => {
         console.error('Error creating tour:', error);
         return res.status(500).json({
             error: 'Failed to create tour',
-            message: error instanceof Error ? error.message : 'Unknown error'
+            message: error.message || (typeof error === 'string' ? error : 'Unknown error')
         });
     }
 });
@@ -88,7 +133,7 @@ router.put('/:id', async (req, res) => {
         console.error('Error updating tour:', error);
         return res.status(500).json({
             error: 'Failed to update tour',
-            message: error instanceof Error ? error.message : 'Unknown error'
+            message: error.message || (typeof error === 'string' ? error : 'Unknown error')
         });
     }
 });

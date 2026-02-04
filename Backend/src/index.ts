@@ -3,7 +3,7 @@ dotenv.config({ path: './.env' });
 console.log('dotenv config called, cwd:', process.cwd());
 
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -27,10 +27,30 @@ if (process.env.HELMET_ENABLED !== 'false') {
 }
 
 // CORS configuration
-const corsOptions = {
-  origin: process.env.FRONTEND_URL?.split(',') || 'http://localhost:5173',
+// FRONTEND_URL supports a comma-separated allowlist of origins.
+// We also include sensible defaults so production works out-of-the-box.
+const defaultAllowedOrigins = [
+  'https://horizontourists.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
+
+const envAllowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set<string>([...defaultAllowedOrigins, ...envAllowedOrigins]);
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server / curl requests (no Origin header)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 

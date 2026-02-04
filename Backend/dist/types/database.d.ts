@@ -35,6 +35,7 @@ export interface Tour {
     included: string[];
     excluded: string[];
     requirements: string[];
+    category: string;
     created_at: string;
     updated_at: string;
     country?: TourCountry;
@@ -58,6 +59,7 @@ export interface CreateTourData {
     included?: string[];
     excluded?: string[];
     requirements?: string[];
+    category?: string;
 }
 export interface UpdateTourData {
     title?: string;
@@ -77,4 +79,5 @@ export interface UpdateTourData {
     included?: string[];
     excluded?: string[];
     requirements?: string[];
+    category?: string;
 }

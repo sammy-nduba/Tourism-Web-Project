@@ -12,3 +12,5 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: FRONTEND_URL
+        value: https://horizontourists.netlify.app
