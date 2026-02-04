@@ -7,18 +7,23 @@ export const COUNTRIES: Record<Country, { name: string; code: string; flag: stri
   rwanda: { name: 'Rwanda', code: 'RW', flag: '🇷🇼' },
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000');
+export const API_BASE_URL = 
+import.meta.env.VITE_API_BASE_URL || 
+(import.meta.env.PROD
+  ? 'https://tourism-web-project.onrender.com/api'
+  : 'http://localhost:3000/api');
 
 export const API_ENDPOINTS = {
-  COUNTRIES: '/api/countries',
-  CITIES: '/api/cities',
-  TOURS: '/api/tours',
-  PROGRAMS: '/api/programs',
-  BLOG: '/api/blog',
-  CONTACT: '/api/contact',
-  DONATE: '/api/donate',
-  SEARCH: '/api/search',
-  FAQ: '/api/faq',
+  COUNTRIES: '/countries',
+CITIES: '/cities',
+TOURS: '/tours',
+PROGRAMS: '/programs',
+BLOG: '/blog',
+CONTACT: '/contact',
+DONATE: '/donate',
+SEARCH: '/search',
+FAQ: '/faq',
+PRIVACY: '/privacy',
 } as const;
 
 export const ROUTES = {
