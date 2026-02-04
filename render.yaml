@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     branch: main
-    buildCommand: npm ci && npm run build --workspace=Backend
+    buildCommand: rm -rf node_modules Backend/node_modules && npm ci && npm run build --workspace=Backend
     startCommand: npm start --workspace=Backend
     envVars:
       - key: NODE_ENV

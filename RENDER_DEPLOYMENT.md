@@ -25,7 +25,7 @@ Your Backend is ready to deploy. The key files are:
    - **Environment**: `Node`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
-   - **Build Command**: `npm install -ws && npm run build --workspace=Backend`
+   - **Build Command**: `rm -rf node_modules Backend/node_modules && npm ci && npm run build --workspace=Backend`
    - **Start Command**: `npm start --workspace=Backend`
    - **Plan**: Free or paid (Free tier available)
 
@@ -78,6 +78,12 @@ After deployment:
 3. Verify tours, countries, and cities load correctly
 
 ### Troubleshooting
+
+**Runtime crash: `Cannot find module './debug'` from `node_modules/debug/...`**
+- This is almost always a corrupted / partially-cached `node_modules` on Render.
+- Fix:
+  1. Ensure your Build Command uses a clean install: `rm -rf node_modules Backend/node_modules && npm ci && npm run build --workspace=Backend`
+  2. In Render, run **Manual Deploy → Clear build cache & deploy** once.
 
 **Build fails**: Check the build log for errors. Common issues:
 - Missing environment variables
