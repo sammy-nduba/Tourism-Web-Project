@@ -26,6 +26,9 @@
     "backend:dev": "npm run dev --workspace=Backend",
     "frontend:dev": "npm run dev --workspace=Frontend"
   },
+  "dependencies": {
+    "debug": "^4.3.4"
+  },
   "devDependencies": {
     "@netlify/functions": "^2.8.0",
     "concurrently": "^8.2.2"

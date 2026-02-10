@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, Globe, Users, Award, Shield, Leaf } from 'lucide-react';
 
 export function AboutPage() {
@@ -42,8 +41,8 @@ export function AboutPage() {
               Our Story & Mission
             </h1>
             <p className="text-xl text-emerald-100 max-w-3xl mx-auto">
-              Wild Horizon Adventures was born from a passion for East Africa's incredible wildlife 
-              and a commitment to conservation. We create transformative travel experiences that 
+              Wild Horizon Adventures was born from a passion for East Africa's incredible wildlife
+              and a commitment to conservation. We create transformative travel experiences that
               benefit both travelers and the communities they visit.
             </p>
           </div>
@@ -60,19 +59,19 @@ export function AboutPage() {
               </h2>
               <div className="space-y-4 text-gray-600 text-lg">
                 <p>
-                  Founded in 2009 by wildlife biologist Dr. Sarah Matthews, Wild Horizon Adventures 
-                  emerged from a simple yet powerful vision: to create travel experiences that would 
+                  Founded in 2009 by wildlife biologist Dr. Sarah Matthews, Wild Horizon Adventures
+                  emerged from a simple yet powerful vision: to create travel experiences that would
                   inspire conservation action and support local communities.
                 </p>
                 <p>
-                  After spending years researching mountain gorillas in Rwanda and working with 
-                  conservation organizations across East Africa, Dr. Matthews recognized the 
-                  incredible potential of responsible tourism to fund conservation efforts and 
+                  After spending years researching mountain gorillas in Rwanda and working with
+                  conservation organizations across East Africa, Dr. Matthews recognized the
+                  incredible potential of responsible tourism to fund conservation efforts and
                   provide sustainable livelihoods for local communities.
                 </p>
                 <p>
-                  Today, we're proud to have supported over 50 conservation projects, worked with 
-                  hundreds of local guides and community members, and inspired thousands of 
+                  Today, we're proud to have supported over 50 conservation projects, worked with
+                  hundreds of local guides and community members, and inspired thousands of
                   travelers to become conservation advocates.
                 </p>
               </div>
@@ -99,7 +98,7 @@ export function AboutPage() {
               Our Values
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Every decision we make is guided by these core principles that shape how we operate 
+              Every decision we make is guided by these core principles that shape how we operate
               and the experiences we create.
             </p>
           </div>
@@ -130,7 +129,7 @@ export function AboutPage() {
               Impact by the Numbers
             </h2>
             <p className="text-xl text-emerald-100 max-w-2xl mx-auto">
-              Together with our travelers and partners, we're making a real difference for 
+              Together with our travelers and partners, we're making a real difference for
               conservation and communities across East Africa.
             </p>
           </div>
@@ -158,7 +157,7 @@ export function AboutPage() {
               Meet Our Team
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our passionate team combines decades of experience in wildlife conservation, 
+              Our passionate team combines decades of experience in wildlife conservation,
               sustainable tourism, and East African culture.
             </p>
           </div>
@@ -213,18 +212,18 @@ export function AboutPage() {
             Join Our Conservation Mission
           </h2>
           <p className="text-xl mb-8 text-emerald-100">
-            Ready to experience East Africa while making a positive impact? Let's plan your 
+            Ready to experience East Africa while making a positive impact? Let's plan your
             adventure together.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a 
-              href="/contact" 
+            <a
+              href="/contact"
               className="bg-white text-emerald-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
             >
               Start Planning
             </a>
-            <a 
-              href="/get-involved" 
+            <a
+              href="/get-involved"
               className="border-2 border-white text-white px-8 py-3 rounded-lg font-medium hover:bg-white/10 transition-colors"
             >
               Support Our Work

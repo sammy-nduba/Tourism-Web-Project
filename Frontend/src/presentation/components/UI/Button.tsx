@@ -1,11 +1,9 @@
-import React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '../../../shared/utils';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  children: React.ReactNode;
   asChild?: boolean;
 }
 

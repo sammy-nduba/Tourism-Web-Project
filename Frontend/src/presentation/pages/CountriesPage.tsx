@@ -1,4 +1,3 @@
-import React from 'react';
 import { CountryCard } from '../components/Countries/CountryCard';
 import { useCountries } from '../hooks/useCountries';
 import { CountryCardSkeleton } from '../components/UI/Skeleton';

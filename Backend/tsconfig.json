@@ -20,7 +20,11 @@
     "checkJs": false,
     "maxNodeModuleJsDepth": 1,
     "isolatedModules": true,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "typeRoots": [
+      "../node_modules/@types",
+      "./node_modules/@types"
+    ]
   },
   "include": [
     "src/**/*"

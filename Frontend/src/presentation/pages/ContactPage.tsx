@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
 import { Button } from '../components/UI/Button';
 import { Card, CardContent } from '../components/UI/Card';
@@ -38,7 +38,7 @@ export function ContactPage() {
             Get in Touch
           </h1>
           <p className="text-xl text-emerald-100 max-w-3xl mx-auto">
-            Ready to plan your East African adventure? Have questions about our conservation programs? 
+            Ready to plan your East African adventure? Have questions about our conservation programs?
             We'd love to hear from you and help you create an unforgettable experience.
           </p>
         </div>
@@ -53,7 +53,7 @@ export function ContactPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Contact Information
               </h2>
-              
+
               <div className="space-y-6">
                 <Card>
                   <CardContent className="flex items-start space-x-4">
@@ -95,7 +95,7 @@ export function ContactPage() {
               <div className="mt-8 p-6 bg-emerald-50 rounded-lg">
                 <h3 className="font-semibold text-emerald-900 mb-3">Planning Your Trip?</h3>
                 <p className="text-emerald-800 text-sm mb-4">
-                  Our travel specialists are here to help create your perfect East African adventure. 
+                  Our travel specialists are here to help create your perfect East African adventure.
                   Get personalized recommendations based on your interests and travel dates.
                 </p>
                 <Button size="sm" className="w-full">
@@ -287,7 +287,7 @@ export function ContactPage() {
                   How far in advance should I book my tour?
                 </h3>
                 <p className="text-gray-600">
-                  We recommend booking at least 3-6 months in advance, especially for peak seasons 
+                  We recommend booking at least 3-6 months in advance, especially for peak seasons
                   (July-October and December-January) and gorilla trekking permits which have limited availability.
                 </p>
               </CardContent>
@@ -299,8 +299,8 @@ export function ContactPage() {
                   What's included in your tour prices?
                 </h3>
                 <p className="text-gray-600">
-                  Our prices typically include accommodation, meals as specified, professional guides, 
-                  park fees, transportation, and airport transfers. International flights, visas, 
+                  Our prices typically include accommodation, meals as specified, professional guides,
+                  park fees, transportation, and airport transfers. International flights, visas,
                   travel insurance, and personal expenses are excluded.
                 </p>
               </CardContent>
@@ -312,7 +312,7 @@ export function ContactPage() {
                   Do you offer custom/private tours?
                 </h3>
                 <p className="text-gray-600">
-                  Yes! We specialize in creating custom itineraries tailored to your interests, 
+                  Yes! We specialize in creating custom itineraries tailored to your interests,
                   budget, and travel dates. Contact us to discuss your dream East African adventure.
                 </p>
               </CardContent>
@@ -324,8 +324,8 @@ export function ContactPage() {
                   What conservation projects do you support?
                 </h3>
                 <p className="text-gray-600">
-                  We support wildlife conservation, anti-poaching efforts, community education programs, 
-                  and sustainable tourism initiatives. A portion of every tour price goes directly to 
+                  We support wildlife conservation, anti-poaching efforts, community education programs,
+                  and sustainable tourism initiatives. A portion of every tour price goes directly to
                   these conservation efforts.
                 </p>
               </CardContent>
