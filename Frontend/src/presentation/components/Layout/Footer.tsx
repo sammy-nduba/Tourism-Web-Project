@@ -12,10 +12,10 @@ export function Footer() {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <Globe className="h-8 w-8 text-emerald-400" />
-              <span className="font-bold text-xl">Wild Horizon Adventures</span>
+              <span className="font-bold text-xl">Davikiths Tours</span>
             </div>
             <p className="text-gray-300 mb-4">
-              Discover the heart of Africa through responsible travel and conservation efforts 
+              Discover the heart of Africa through responsible travel and conservation efforts
               in Kenya, Uganda, Tanzania, and Rwanda.
             </p>
             <div className="flex space-x-4">
@@ -69,11 +69,11 @@ export function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-gray-300">
                 <Mail className="h-4 w-4 text-emerald-400" />
-                <span>info@wildhorizonadventures.com</span>
+                <span>[EMAIL_ADDRESS]</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-300">
                 <Phone className="h-4 w-4 text-emerald-400" />
-                <span>+254 700 123 456</span>
+                <span>+254 701 701 387</span>
               </div>
               <div className="flex items-start space-x-2 text-gray-300">
                 <MapPin className="h-4 w-4 text-emerald-400 mt-1 flex-shrink-0" />
@@ -107,7 +107,7 @@ export function Footer() {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Wild Horizon Adventures. All rights reserved.
+              © 2024 Davikiths Tours. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to={ROUTES.PRIVACY} className="text-gray-400 hover:text-emerald-400 text-sm transition-colors">

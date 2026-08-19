@@ -1,6 +1,6 @@
 import { adminService } from '../../../../admin/services/AdminService';
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(_request: Request, { params }: { params: { slug: string } }) {
   try {
     const tour = await adminService.getTourBySlug(params.slug);
 

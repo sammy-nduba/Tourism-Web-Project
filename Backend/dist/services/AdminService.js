@@ -1,328 +1,301 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import { createClient } from '@supabase/supabase-js';
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
-console.log('[AdminService] Environment Variables Debug:');
-console.log('[AdminService] SUPABASE_URL:', supabaseUrl ? `✓ ${supabaseUrl.substring(0, 30)}...` : '✗ missing');
-console.log('[AdminService] SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? `✓ ${supabaseServiceKey.substring(0, 20)}...` : '✗ missing');
-const missingVars = [];
-if (!supabaseUrl)
-    missingVars.push('SUPABASE_URL (or VITE_SUPABASE_URL)');
-if (!supabaseServiceKey)
-    missingVars.push('SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY)');
-if (missingVars.length > 0) {
-    throw new Error(`Missing Supabase configuration: ${missingVars.join(', ')}. Create a .env with these variables in the Backend folder.`);
-}
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-console.log('[AdminService] Supabase client initialized successfully');
+import { query } from '../db/pool.js';
+import crypto from 'crypto';
+const TOUR_SELECT = `
+  t.*,
+  JSON_OBJECT(
+    'id', ci.id,
+    'name', ci.name,
+    'countries', JSON_OBJECT(
+      'id', co.id,
+      'name', co.name
+    )
+  ) AS cities
+`;
+const TOUR_JOINS = `
+  FROM tours t
+  LEFT JOIN cities   ci ON ci.id = t.city_id
+  LEFT JOIN countries co ON co.id = ci.country_id
+`;
 export class AdminService {
-    async createTour(tourData) {
-        const { data, error } = await supabase
-            .from('tours')
-            .insert(tourData)
-            .select()
-            .single();
-        if (error)
-            throw error;
-        return data;
+    async createTour(data) {
+        const id = data.id || crypto.randomUUID();
+        const finalData = { ...data, id };
+        const cols = Object.keys(finalData);
+        const vals = Object.values(finalData);
+        const placeholders = cols.map(() => '?').join(', ');
+        const sql = `
+      INSERT INTO tours (${cols.join(', ')})
+      VALUES (${placeholders})
+    `;
+        await query(sql, vals);
+        const { rows } = await query(`SELECT * FROM tours WHERE id = ?`, [id]);
+        return rows[0];
     }
     async getTour(id) {
-        const { data, error } = await supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('id', id)
-            .single();
-        if (error)
-            throw error;
-        return data;
+        const sql = `SELECT ${TOUR_SELECT} ${TOUR_JOINS} WHERE t.id = $1`;
+        const { rows } = await query(sql, [id]);
+        return rows[0] ?? null;
     }
     async getTourBySlug(slug) {
-        const { data, error } = await supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('slug', slug)
-            .single();
-        if (error) {
-            if (error.code === 'PGRST116') {
-                return null;
-            }
-            throw error;
-        }
-        return data;
+        const sql = `SELECT ${TOUR_SELECT} ${TOUR_JOINS} WHERE t.slug = $1`;
+        const { rows } = await query(sql, [slug]);
+        return rows[0] ?? null;
     }
     async updateTour(id, updates) {
-        const { data, error } = await supabase
-            .from('tours')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-        if (error)
-            throw error;
-        return data;
+        const keys = Object.keys(updates);
+        const vals = Object.values(updates);
+        const sets = keys.map((k) => `\`${k}\` = ?`).join(', ');
+        const sql = `
+      UPDATE tours SET ${sets}, updated_at = NOW()
+      WHERE id = ?
+    `;
+        await query(sql, [...vals, id]);
+        const { rows } = await query(`SELECT * FROM tours WHERE id = ?`, [id]);
+        return rows[0];
     }
     async deleteTour(id) {
-        const { error } = await supabase
-            .from('tours')
-            .delete()
-            .eq('id', id);
-        if (error)
-            throw error;
+        await query('DELETE FROM tours WHERE id = $1', [id]);
     }
     async getTours(filters = {}) {
-        let cityIds;
-        if (filters.country) {
-            const { data: cities, error: citiesError } = await supabase
-                .from('cities')
-                .select('id')
-                .eq('country_id', filters.country);
-            if (citiesError)
-                throw new Error(`Failed to fetch cities: ${citiesError.message}`);
-            cityIds = cities?.map(c => c.id) || [];
-        }
-        let query = supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `);
-        if (cityIds && cityIds.length > 0) {
-            query = query.in('city_id', cityIds);
-        }
-        else if (filters.country) {
-            return [];
-        }
-        if (filters.city) {
-            query = query.eq('city_id', filters.city);
-        }
-        if (filters.category) {
-            query = query.eq("category", filters.category);
-        }
-        if (filters.experience_level) {
-            query = query.eq('difficulty_level', filters.experience_level);
-        }
-        if (filters.min_price) {
-            query = query.gte('price', filters.min_price);
-        }
-        if (filters.max_price) {
-            query = query.lte('price', filters.max_price);
-        }
-        if (filters.query) {
-            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
-        }
-        if (filters.limit) {
-            query = query.limit(filters.limit);
-        }
-        if (filters.offset) {
-            query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
-        }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        return data;
+        const conditions = [];
+        const params = [];
+        this._applyFilters(conditions, params, filters, false);
+        const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+        const limitClause = filters.limit ? `LIMIT $${params.length + 1}` : '';
+        if (filters.limit)
+            params.push(filters.limit);
+        const offsetClause = filters.offset ? `OFFSET $${params.length + 1}` : '';
+        if (filters.offset)
+            params.push(filters.offset);
+        const sql = `
+      SELECT ${TOUR_SELECT} ${TOUR_JOINS}
+      ${where}
+      ORDER BY t.created_at DESC
+      ${limitClause} ${offsetClause}
+    `;
+        const { rows } = await query(sql, params);
+        return rows;
     }
     async getPublishedTours(filters = {}) {
-        let query = supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('is_published', true);
-        if (filters.country) {
-            const countryInput = filters.country;
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(countryInput);
-            if (isUUID) {
-                const { data: cities } = await supabase
-                    .from('cities')
-                    .select('id')
-                    .eq('country_id', countryInput);
-                if (cities && cities.length > 0) {
-                    query = query.in('city_id', cities.map(c => c.id));
-                }
-                else {
-                    return [];
-                }
-            }
-            else {
-                const { data: countries } = await supabase
-                    .from('countries')
-                    .select('id')
-                    .or(`code.eq.${countryInput.toUpperCase()},name.ilike.${countryInput}`);
-                if (countries && countries.length > 0) {
-                    const countryIds = countries.map(c => c.id);
-                    const { data: cities } = await supabase
-                        .from('cities')
-                        .select('id')
-                        .in('country_id', countryIds);
-                    if (cities && cities.length > 0) {
-                        query = query.in('city_id', cities.map(c => c.id));
-                    }
-                    else {
-                        return [];
-                    }
-                }
-                else {
-                    return [];
-                }
-            }
-        }
-        if (filters.category) {
-            query = query.eq("category", filters.category);
-        }
-        if (filters.city) {
-            query = query.eq('city_id', filters.city);
-        }
-        if (filters.experience_level) {
-            query = query.eq('difficulty_level', filters.experience_level);
-        }
-        if (filters.min_price) {
-            query = query.gte('price', filters.min_price);
-        }
-        if (filters.max_price) {
-            query = query.lte('price', filters.max_price);
-        }
-        if (filters.featured) {
-            query = query.eq('featured', true);
-        }
-        if (filters.query) {
-            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
-        }
-        if (filters.limit) {
-            query = query.limit(filters.limit);
-        }
-        if (filters.offset) {
-            query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
-        }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        return data;
+        const conditions = ['t.is_published = true'];
+        const params = [];
+        this._applyFilters(conditions, params, filters, true);
+        const where = `WHERE ${conditions.join(' AND ')}`;
+        const limitClause = filters.limit ? `LIMIT $${params.length + 1}` : '';
+        if (filters.limit)
+            params.push(filters.limit);
+        const offsetClause = filters.offset ? `OFFSET $${params.length + 1}` : '';
+        if (filters.offset)
+            params.push(filters.offset);
+        const sql = `
+      SELECT ${TOUR_SELECT} ${TOUR_JOINS}
+      ${where}
+      ORDER BY t.created_at DESC
+      ${limitClause} ${offsetClause}
+    `;
+        const { rows } = await query(sql, params);
+        return rows;
     }
     async getFeaturedTours(limit = 6) {
-        const { data, error } = await supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('is_published', true)
-            .eq('featured', true)
-            .limit(limit)
-            .order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        return data;
+        const sql = `
+      SELECT ${TOUR_SELECT} ${TOUR_JOINS}
+      WHERE t.is_published = true AND t.featured = true
+      ORDER BY t.created_at DESC
+      LIMIT $1
+    `;
+        const { rows } = await query(sql, [limit]);
+        return rows;
     }
     async getToursByCountry(filters = {}) {
-        let query = supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('is_published', true);
-        if (filters.country) {
-            query = query.eq('city.countries.id', filters.country);
-        }
-        if (filters.experience_level) {
-            query = query.eq('difficulty_level', filters.experience_level);
-        }
-        if (filters.min_price) {
-            query = query.gte('price', filters.min_price);
-        }
-        if (filters.max_price) {
-            query = query.lte('price', filters.max_price);
-        }
-        if (filters.limit) {
-            query = query.limit(filters.limit);
-        }
-        if (filters.offset) {
-            query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
-        }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        return data;
+        return this.getPublishedTours(filters);
     }
     async searchTours(filters = {}) {
-        let query = supabase
-            .from('tours')
-            .select(`
-        *,
-        cities(*, countries(*))
-      `)
-            .eq('is_published', true);
-        if (filters.query) {
-            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
-        }
-        if (filters.country) {
-            query = query.eq('city.countries.id', filters.country);
-        }
-        if (filters.city) {
-            query = query.eq('city_id', filters.city);
-        }
-        if (filters.experience_level) {
-            query = query.eq('difficulty_level', filters.experience_level);
-        }
-        if (filters.min_price) {
-            query = query.gte('price', filters.min_price);
-        }
-        if (filters.max_price) {
-            query = query.lte('price', filters.max_price);
-        }
-        if (filters.limit) {
-            query = query.limit(filters.limit);
-        }
-        if (filters.offset) {
-            query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
-        }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        return data;
+        const conditions = ['t.is_published = true'];
+        const params = [];
+        this._applyFilters(conditions, params, filters, true);
+        const where = `WHERE ${conditions.join(' AND ')}`;
+        const limitClause = filters.limit ? `LIMIT $${params.length + 1}` : 'LIMIT 20';
+        if (filters.limit)
+            params.push(filters.limit);
+        const offsetClause = filters.offset ? `OFFSET $${params.length + 1}` : '';
+        if (filters.offset)
+            params.push(filters.offset);
+        const sql = `
+      SELECT ${TOUR_SELECT} ${TOUR_JOINS}
+      ${where}
+      ORDER BY t.created_at DESC
+      ${limitClause} ${offsetClause}
+    `;
+        const { rows } = await query(sql, params);
+        return rows;
     }
     async getCountries() {
-        const { data, error } = await supabase
-            .from('countries')
-            .select('*')
-            .order('name');
-        if (error)
-            throw error;
-        return data;
+        const { rows } = await query('SELECT * FROM countries ORDER BY name');
+        return rows;
     }
     async getCountryWithCities(countryId) {
-        const { data, error } = await supabase
-            .from('countries')
-            .select(`
-        *,
-        cities(*)
-      `)
-            .eq('id', countryId)
-            .single();
-        if (error)
-            throw error;
-        return data;
+        const { rows: countries } = await query('SELECT * FROM countries WHERE id = $1', [countryId]);
+        if (!countries[0])
+            return null;
+        const { rows: cities } = await query('SELECT * FROM cities WHERE country_id = $1 ORDER BY name', [countryId]);
+        return { ...countries[0], cities };
+    }
+    async createCountry(data) {
+        const id = data.id || crypto.randomUUID();
+        const finalData = { ...data, id };
+        const cols = Object.keys(finalData);
+        const vals = Object.values(finalData);
+        const placeholders = cols.map(() => '?').join(', ');
+        const sql = `INSERT INTO countries (${cols.join(', ')}) VALUES (${placeholders})`;
+        await query(sql, vals);
+        const { rows } = await query(`SELECT * FROM countries WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async updateCountry(id, updates) {
+        const keys = Object.keys(updates);
+        const vals = Object.values(updates);
+        const sets = keys.map((k) => `\`${k}\` = ?`).join(', ');
+        const sql = `UPDATE countries SET ${sets}, updated_at = NOW() WHERE id = ?`;
+        await query(sql, [...vals, id]);
+        const { rows } = await query(`SELECT * FROM countries WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async deleteCountry(id) {
+        await query('DELETE FROM countries WHERE id = $1', [id]);
     }
     async getCities(countryId) {
-        let query = supabase
-            .from('cities')
-            .select('*')
-            .order('name');
         if (countryId) {
-            query = query.eq('country_id', countryId);
+            const { rows } = await query(`SELECT ci.*, JSON_OBJECT('id', co.id, 'name', co.name) AS countries
+         FROM cities ci LEFT JOIN countries co ON co.id = ci.country_id
+         WHERE ci.country_id = ? ORDER BY ci.name`, [countryId]);
+            return rows;
         }
-        const { data, error } = await query;
-        if (error)
-            throw error;
-        return data;
+        const { rows } = await query(`SELECT ci.*, JSON_OBJECT('id', co.id, 'name', co.name) AS countries
+       FROM cities ci LEFT JOIN countries co ON co.id = ci.country_id
+       ORDER BY ci.name`);
+        return rows;
+    }
+    async createCity(data) {
+        const id = data.id || crypto.randomUUID();
+        const finalData = { ...data, id };
+        const cols = Object.keys(finalData);
+        const vals = Object.values(finalData);
+        const placeholders = cols.map(() => '?').join(', ');
+        const sql = `INSERT INTO cities (${cols.join(', ')}) VALUES (${placeholders})`;
+        await query(sql, vals);
+        const { rows } = await query(`SELECT * FROM cities WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async updateCity(id, updates) {
+        const keys = Object.keys(updates);
+        const vals = Object.values(updates);
+        const sets = keys.map((k) => `\`${k}\` = ?`).join(', ');
+        const sql = `UPDATE cities SET ${sets}, updated_at = NOW() WHERE id = ?`;
+        await query(sql, [...vals, id]);
+        const { rows } = await query(`SELECT * FROM cities WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async deleteCity(id) {
+        await query('DELETE FROM cities WHERE id = $1', [id]);
+    }
+    async saveContactRequest(data) {
+        const id = crypto.randomUUID();
+        const sql = `
+      INSERT INTO contact_requests (id, name, email, phone, subject, message, inquiry_type, preferred_contact, newsletter)
+      VALUES (?,?,?,?,?,?,?,?,?)
+    `;
+        await query(sql, [
+            id, data.name, data.email, data.phone ?? null,
+            data.subject ?? null, data.message,
+            data.inquiry_type ?? 'general',
+            data.preferred_contact ?? 'email',
+            data.newsletter ?? false,
+        ]);
+        const { rows } = await query(`SELECT * FROM contact_requests WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async getContactRequests() {
+        const { rows } = await query('SELECT * FROM contact_requests ORDER BY created_at DESC');
+        return rows;
+    }
+    async updateContactRequest(id, updates) {
+        const keys = Object.keys(updates);
+        const vals = Object.values(updates);
+        const sets = keys.map((k) => `\`${k}\` = ?`).join(', ');
+        const sql = `UPDATE contact_requests SET ${sets} WHERE id = ?`;
+        await query(sql, [...vals, id]);
+        const { rows } = await query(`SELECT * FROM contact_requests WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async createBooking(data) {
+        const id = crypto.randomUUID();
+        const sql = `
+      INSERT INTO bookings (id, tour_id, customer_name, customer_email, customer_phone,
+                            start_date, end_date, guests, total_amount, special_requests)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+    `;
+        await query(sql, [
+            id, data.tour_id, data.customer_name, data.customer_email,
+            data.customer_phone ?? null, data.start_date, data.end_date,
+            data.guests, data.total_amount, data.special_requests ?? null,
+        ]);
+        const { rows } = await query(`SELECT * FROM bookings WHERE id = ?`, [id]);
+        return rows[0];
+    }
+    async getBookings() {
+        const { rows } = await query(`
+      SELECT b.*, t.title AS tour_title
+      FROM bookings b
+      LEFT JOIN tours t ON t.id = b.tour_id
+      ORDER BY b.created_at DESC
+    `);
+        return rows;
+    }
+    async getDashboardStats() {
+        const [tours, contacts, bookings] = await Promise.all([
+            query('SELECT COUNT(*) FROM tours'),
+            query("SELECT COUNT(*) FROM contact_requests WHERE status = 'pending'"),
+            query('SELECT COUNT(*) FROM bookings'),
+        ]);
+        return {
+            totalTours: parseInt(tours.rows[0].count),
+            pendingContacts: parseInt(contacts.rows[0].count),
+            totalBookings: parseInt(bookings.rows[0].count),
+        };
+    }
+    _applyFilters(conditions, params, filters, publishedOnly) {
+        if (filters.q) {
+            params.push(`%${filters.q}%`);
+            params.push(`%${filters.q}%`);
+            conditions.push(`(t.title LIKE ? OR t.description LIKE ?)`);
+        }
+        if (filters.country) {
+            params.push(filters.country);
+            conditions.push(`co.id = $${params.length}`);
+        }
+        if (filters.city) {
+            params.push(filters.city);
+            conditions.push(`t.city_id = $${params.length}`);
+        }
+        if (filters.category) {
+            params.push(filters.category);
+            conditions.push(`t.category = $${params.length}`);
+        }
+        if (filters.experience_level) {
+            params.push(filters.experience_level);
+            conditions.push(`t.difficulty_level = $${params.length}`);
+        }
+        if (filters.min_price !== undefined) {
+            params.push(filters.min_price);
+            conditions.push(`t.price >= $${params.length}`);
+        }
+        if (filters.max_price !== undefined) {
+            params.push(filters.max_price);
+            conditions.push(`t.price <= $${params.length}`);
+        }
+        if (filters.featured) {
+            conditions.push(`t.featured = true`);
+        }
     }
 }
 export const adminService = new AdminService();

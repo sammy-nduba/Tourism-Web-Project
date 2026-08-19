@@ -32,7 +32,7 @@ export function LoginPage() {
               <Compass className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-            <p className="text-slate-600 mt-2">Wild Horizon Adventures</p>
+            <p className="text-slate-600 mt-2">Davikiths Tours</p>
           </div>
 
           {error && (

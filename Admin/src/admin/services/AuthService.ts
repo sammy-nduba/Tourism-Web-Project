@@ -1,6 +1,16 @@
-import { supabase } from '../../lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
-import type { Database } from '../../lib/database.types';
+// Replaces Supabase Auth with custom JWT authentication
+
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
+
+export interface User {
+  id: string;
+  email: string;
+}
+
+export interface Session {
+  user: User;
+  access_token: string;
+}
 
 export interface AdminUser {
   id: string;
@@ -9,130 +19,130 @@ export interface AdminUser {
   permissions: string[];
 }
 
-export class AuthService {
+type AuthListener = (user: User | null) => void;
+
+class AuthService {
+  private listeners: Set<AuthListener> = new Set();
+
   async signIn(email: string, password: string): Promise<{ user: User; session: Session }> {
     console.log('[AuthService] Sign-in attempt:', { email, timestamp: new Date().toISOString() });
-    
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+
+    const response = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      console.error('[AuthService] Sign-in failed - Auth error:', { email, error: error.message });
-      throw error;
-    }
-    
-    if (!data.user || !data.session) {
-      console.error('[AuthService] Sign-in failed - No user or session returned', { email });
-      throw new Error('Authentication failed');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Authentication failed');
     }
 
-    console.log('[AuthService] Auth successful, checking admin role:', { userId: data.user.id, email });
-    const isAdmin = await this.checkAdminRole(data.user.id);
-    
-    if (!isAdmin) {
-      console.warn('[AuthService] Access denied - User is not admin:', { userId: data.user.id, email });
-      await supabase.auth.signOut();
-      throw new Error('Unauthorized: Admin access required');
-    }
+    const { token, user: profile } = await response.json();
 
-    console.log('[AuthService] Admin login successful:', { userId: data.user.id, email, timestamp: new Date().toISOString() });
-    return { user: data.user, session: data.session };
+    const user: User = {
+      id: profile.id,
+      email: profile.email,
+    };
+
+    const session: Session = {
+      user,
+      access_token: token,
+    };
+
+    // Save token and profile to localStorage
+    localStorage.setItem('admin_token', token);
+    localStorage.setItem('admin_user', JSON.stringify(profile));
+
+    // Notify listeners
+    this.notify(user);
+
+    return { user, session };
   }
 
   async signOut(): Promise<void> {
-    console.log('[AuthService] Sign-out initiated:', { timestamp: new Date().toISOString() });
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('[AuthService] Sign-out error:', error);
-      throw error;
-    }
-    console.log('[AuthService] Sign-out successful');
+    console.log('[AuthService] Sign-out initiated');
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    this.notify(null);
   }
 
   async getCurrentUser(): Promise<User | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    const userJson = localStorage.getItem('admin_user');
+    if (!userJson) return null;
+
+    try {
+      const profile = JSON.parse(userJson);
+      return { id: profile.id, email: profile.email };
+    } catch {
+      return null;
+    }
   }
 
   async getSession(): Promise<Session | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    const token = localStorage.getItem('admin_token');
+    const userJson = localStorage.getItem('admin_user');
+
+    if (!token || !userJson) return null;
+
+    try {
+      const profile = JSON.parse(userJson);
+      const user = { id: profile.id, email: profile.email };
+      return { user, access_token: token };
+    } catch {
+      return null;
+    }
   }
 
   async checkAdminRole(userId: string): Promise<boolean> {
+    const userJson = localStorage.getItem('admin_user');
+    if (!userJson) return false;
+
     try {
-      console.log('[AuthService] Checking admin role for user:', userId);
-      const { data, error } = await supabase
-        .from('admin_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('[AuthService] Error checking admin role:', { userId, error: error.message });
-        return false;
-      }
-
-      const isAdmin = !!data;
-      console.log('[AuthService] Admin role check result:', { userId, isAdmin, role: data?.role || 'N/A' });
-      return isAdmin;
-    } catch (err) {
-      console.error('[AuthService] Exception checking admin role:', { userId, error: err });
+      const profile = JSON.parse(userJson);
+      return profile.id === userId && (profile.role === 'admin' || profile.role === 'superadmin');
+    } catch {
       return false;
     }
   }
 
   async getAdminProfile(userId: string): Promise<AdminUser | null> {
+    const userJson = localStorage.getItem('admin_user');
+    if (!userJson) return null;
+
     try {
-      console.log('[AuthService] Fetching admin profile:', userId);
-      const { data, error } = await supabase
-        .from('admin_roles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle<Database['public']['Tables']['admin_roles']['Row']>();
-
-      if (error) {
-        console.error('[AuthService] Error fetching admin profile:', { userId, error: error.message });
-        return null;
-      }
-
-      if (!data) {
-        console.warn('[AuthService] No admin profile found for user:', userId);
-        return null;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('[AuthService] Could not get current user for profile');
-        return null;
-      }
-
-      const profile = {
-        id: user.id,
-        email: user.email || '',
-        role: data.role,
-        permissions: (data.permissions as string[]) || [],
+      const profile = JSON.parse(userJson);
+      if (profile.id !== userId) return null;
+      return {
+        id: profile.id,
+        email: profile.email,
+        role: profile.role,
+        permissions: profile.permissions || [],
       };
-      
-      console.log('[AuthService] Admin profile loaded successfully:', { userId, role: profile.role, permissions: profile.permissions });
-      return profile;
-    } catch (err) {
-      console.error('[AuthService] Exception getting admin profile:', { userId, error: err });
+    } catch {
       return null;
     }
   }
 
   onAuthStateChange(callback: (user: User | null) => void) {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      callback(session?.user || null);
-    });
-
+    this.listeners.add(callback);
     return () => {
-      subscription.unsubscribe();
+      this.listeners.delete(callback);
     };
+  }
+
+  private notify(user: User | null) {
+    this.listeners.forEach((listener) => {
+      try {
+        listener(user);
+      } catch (err) {
+        console.error('[AuthService] Listener error:', err);
+      }
+    });
   }
 }
 
 export const authService = new AuthService();
+export type { User as AuthUser };

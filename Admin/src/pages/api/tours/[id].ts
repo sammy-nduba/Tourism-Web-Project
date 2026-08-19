@@ -1,6 +1,6 @@
 import { adminService } from '../../../admin/services/AdminService';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
   try {
     const tour = await adminService.getTour(params.id);
 
@@ -40,7 +40,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
     await adminService.deleteTour(params.id);
 

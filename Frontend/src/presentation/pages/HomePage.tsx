@@ -18,8 +18,8 @@ export function HomePage() {
         />
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Wild Horizon
-            <span className="block text-emerald-300">Adventures</span>
+            Davikiths
+            <span className="block text-emerald-300">Tours</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-gray-100 max-w-2xl mx-auto leading-relaxed">
             Discover the heart of East Africa through responsible travel and conservation efforts
@@ -197,7 +197,7 @@ export function HomePage() {
                 Adventure with Purpose
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Every journey with Wild Horizon Adventures supports local communities and conservation
+                Every journey with Davikiths Tours supports local communities and conservation
                 efforts. We believe in responsible travel that creates positive impact for wildlife,
                 environments, and people.
               </p>

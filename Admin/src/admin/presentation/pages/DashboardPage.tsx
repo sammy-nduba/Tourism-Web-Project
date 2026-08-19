@@ -34,7 +34,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
-        <p className="text-slate-600">Welcome back! Here's what's happening with Wild Horizon Adventures.</p>
+        <p className="text-slate-600">Welcome back! Here's what's happening with Davikiths Tours.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

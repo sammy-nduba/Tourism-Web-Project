@@ -83,7 +83,7 @@ export function AdminLayout({ children, currentPage, onNavigate }: AdminLayoutPr
                 <Compass className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-white font-bold text-lg">Wild Horizon</h1>
+                <h1 className="text-white font-bold text-lg">Davikiths Tours</h1>
                 <p className="text-slate-400 text-xs">Admin Dashboard</p>
               </div>
             </div>

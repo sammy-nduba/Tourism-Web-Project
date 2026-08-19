@@ -41,7 +41,7 @@ export function AboutPage() {
               Our Story & Mission
             </h1>
             <p className="text-xl text-emerald-100 max-w-3xl mx-auto">
-              Wild Horizon Adventures was born from a passion for East Africa's incredible wildlife
+              Davikiths Tours was born from a passion for East Africa's incredible wildlife
               and a commitment to conservation. We create transformative travel experiences that
               benefit both travelers and the communities they visit.
             </p>
@@ -59,7 +59,7 @@ export function AboutPage() {
               </h2>
               <div className="space-y-4 text-gray-600 text-lg">
                 <p>
-                  Founded in 2009 by wildlife biologist Dr. Sarah Matthews, Wild Horizon Adventures
+                  Founded in 2009 by wildlife biologist Dr. Sarah Matthews, Davikiths Tours
                   emerged from a simple yet powerful vision: to create travel experiences that would
                   inspire conservation action and support local communities.
                 </p>

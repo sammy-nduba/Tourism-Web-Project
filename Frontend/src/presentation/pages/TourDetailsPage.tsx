@@ -9,8 +9,9 @@ import { Skeleton } from '../components/UI/Skeleton';
 import { Image } from '../components/UI/Image';
 
 export function TourDetailsPage() {
-    const { slug } = useParams<{ slug: string }>();
-    const { tour, loading, error } = useTour(slug || '');
+    const { slug: encodedSlug } = useParams<{ slug: string }>();
+    const slug = encodedSlug ? decodeURIComponent(encodedSlug) : '';
+    const { tour, loading, error } = useTour(slug);
     const [activeTab, setActiveTab] = useState<'itinerary' | 'includes' | 'reviews'>('itinerary');
 
     if (loading) {

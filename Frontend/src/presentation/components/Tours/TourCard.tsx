@@ -15,7 +15,7 @@ export function TourCard({ tour }: TourCardProps) {
 
   return (
     <Card hover>
-      <Link to={`/adventures/${tour.slug}`}>
+      <Link to={`/adventures/${encodeURIComponent(tour.slug)}`}>
         <div className="relative">
           <Image
             src={tour.heroImage.url}

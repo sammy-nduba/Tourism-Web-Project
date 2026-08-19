@@ -17,6 +17,8 @@
     "dev:all": "concurrently \"npm run dev --workspace=Admin\" \"npm run dev --workspace=Backend\" \"npm run dev --workspace=Frontend\"",
     "build": "npm run build -ws",
     "build:deploy": "npm run build --workspace=Admin && npm run build --workspace=Frontend && npm run copy:admin",
+    "package:frontend": "./package-frontend.sh",
+    "package:backend": "./package-backend.sh",
     "copy:admin": "mkdir -p Frontend/dist/admin && cp -r Admin/dist/* Frontend/dist/admin/",
     "lint": "npm run lint -ws",
     "typecheck": "npm run typecheck -ws",
@@ -27,7 +29,7 @@
     "frontend:dev": "npm run dev --workspace=Frontend"
   },
   "dependencies": {
-    "debug": "^4.3.4"
+    "debug": "^4.3.7"
   },
   "devDependencies": {
     "@netlify/functions": "^2.8.0",

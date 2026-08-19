@@ -10,7 +10,7 @@ export const COUNTRIES: Record<Country, { name: string; code: string; flag: stri
 const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD
-    ? 'https://tourism-web-project.onrender.com/api'
+    ? '/api'
     : 'http://localhost:3000/api');
 
 // Normalize trailing slash to avoid accidental double slashes when concatenating

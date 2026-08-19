@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../../services/AdminService';
 import { Plus, CreditCard as Edit, Trash2, Eye, EyeOff, X, Upload, Calendar, Trash } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/database.types';
 
 type Tour = {
@@ -162,27 +161,36 @@ export function ToursPage() {
   const handleImageUpload = async (file: File): Promise<string> => {
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `tour-images/${fileName}`;
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      // Upload directly - bucket must exist in Supabase
-      // Note: listBuckets() requires admin privileges, so we skip the check
-      const { error: uploadError } = await supabase.storage
-        .from('tour-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const fileData = await base64Promise;
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const token = localStorage.getItem('admin_token');
 
-      if (uploadError) throw uploadError;
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileData,
+        }),
+      });
 
-      // Get public URL
-      const { data } = supabase.storage
-        .from('tour-images')
-        .getPublicUrl(filePath);
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to upload image to backend');
+      }
 
-      return data.publicUrl;
+      const { publicUrl } = await response.json();
+      return publicUrl;
     } catch (error: any) {
       console.error('Failed to upload image:', error);
       const errorMsg = error?.message || 'Failed to upload image';

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Phone, Mail, MapPin, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/UI/Button';
 import { Card, CardContent } from '../components/UI/Card';
+import { API_BASE_URL } from '../../shared/constants';
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -15,10 +16,36 @@ export function ContactPage() {
     newsletter: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
+    setSubmitState('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to submit. Please try again.');
+      }
+
+      setSubmitState('success');
+      // Reset form
+      setFormData({
+        name: '', email: '', phone: '', subject: '', message: '',
+        inquiryType: 'general', preferredContact: 'email', newsletter: false,
+      });
+    } catch (err) {
+      setSubmitState('error');
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -60,7 +87,7 @@ export function ContactPage() {
                     <Phone className="h-6 w-6 text-emerald-600 mt-1" />
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Phone</h3>
-                      <p className="text-gray-600">+254 700 123 456</p>
+                      <p className="text-gray-600">+254 701 701 387</p>
                       <p className="text-gray-600 text-sm">Available 24/7 for emergencies</p>
                     </div>
                   </CardContent>
@@ -71,7 +98,7 @@ export function ContactPage() {
                     <Mail className="h-6 w-6 text-emerald-600 mt-1" />
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
-                      <p className="text-gray-600">info@wildhorizonadventures.com</p>
+                      <p className="text-gray-600">info@davikithtours.com</p>
                       <p className="text-gray-600 text-sm">We respond within 24 hours</p>
                     </div>
                   </CardContent>
@@ -259,10 +286,33 @@ export function ContactPage() {
                       </div>
                     </div>
 
+                    {submitState === 'success' && (
+                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center space-x-3">
+                        <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                        <p className="text-emerald-800">Thank you! Your message has been sent successfully. We'll get back to you within 24 hours.</p>
+                      </div>
+                    )}
+
+                    {submitState === 'error' && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-3">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                        <p className="text-red-800">{errorMessage}</p>
+                      </div>
+                    )}
+
                     <div className="pt-4">
-                      <Button type="submit" size="lg" className="w-full md:w-auto">
-                        <Send className="w-4 h-4 mr-2" />
-                        Send Message
+                      <Button type="submit" size="lg" className="w-full md:w-auto" disabled={submitState === 'loading'}>
+                        {submitState === 'loading' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Send Message
+                          </>
+                        )}
                       </Button>
                     </div>
                   </form>

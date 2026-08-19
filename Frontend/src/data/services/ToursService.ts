@@ -174,7 +174,7 @@ export class ToursService {
 
   async getTourBySlug(slug: string): Promise<Tour | null> {
     try {
-      const backendTour: BackendTour = await this.apiCall<BackendTour>(`${API_ENDPOINTS.TOURS}/slug/${slug}`);
+      const backendTour: BackendTour = await this.apiCall<BackendTour>(`${API_ENDPOINTS.TOURS}/slug/${encodeURIComponent(slug)}`);
       return this.transformBackendTourToFrontend(backendTour);
     } catch (error) {
       console.error(`Failed to fetch tour with slug ${slug}:`, error);

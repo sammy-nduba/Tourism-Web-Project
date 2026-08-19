@@ -26,7 +26,7 @@ export function Header() {
           <div className="flex items-center">
             <Link to={ROUTES.HOME} className="flex items-center space-x-2">
               <Globe className="h-8 w-8 text-emerald-600" />
-              <span className="font-bold text-xl text-gray-900">Wild Horizon Adventures</span>
+              <span className="font-bold text-xl text-gray-900">Davikiths Tours</span>
             </Link>
           </div>
 
